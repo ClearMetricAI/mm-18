@@ -79,11 +79,19 @@ function ExperimentPage() {
     const baseline = qs.reduce((acc, q) => acc + q.baselinePass.filter(Boolean).length, 0);
     const cm = qs.reduce((acc, q) => acc + q.cmPass.filter(Boolean).length, 0);
     const total = qs.reduce((acc, q) => acc + q.criteria.length, 0);
-    return { baseline, cm, total };
+    const changed = qs.filter(
+      (q) =>
+        q.baselineResponse !== q.cmResponse &&
+        !q.baselineResponse.startsWith("(not run") &&
+        !q.cmResponse.startsWith("(not run"),
+    ).length;
+    return { baseline, cm, total, changed, questions: qs.length };
   }, [qs]);
 
   const improvement =
     scores.total > 0 ? Math.round(((scores.cm - scores.baseline) / scores.total) * 100) : 0;
+  const changedPct =
+    scores.questions > 0 ? Math.round((scores.changed / scores.questions) * 100) : 0;
 
   const addQuestion = () => {
     const q: TestQuestion = {
