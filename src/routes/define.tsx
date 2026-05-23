@@ -25,9 +25,11 @@ import {
   Layers,
   X,
   Sparkles,
+  Zap,
+  AlertTriangle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { definitions as seedDefs, type Definition } from "@/lib/mock-data";
+import { definitions as seedDefs, draftField, type Definition } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/define")({ component: DefinePage });
