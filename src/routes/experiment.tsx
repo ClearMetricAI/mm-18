@@ -220,52 +220,6 @@ function ExperimentPage() {
                   criterion. Reasoning is shown next to every check.
                 </TooltipContent>
               </Tooltip>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] transition-colors",
-                      activeBaselines.length > 1
-                        ? "border-primary/40 bg-primary/5 text-foreground"
-                        : "border-border text-muted-foreground hover:text-foreground",
-                    )}
-                    title="Pick which baselines to compare against ClearMetric"
-                  >
-                    <SlidersHorizontal className="h-3 w-3" />
-                    Baselines:
-                    <span className="font-medium text-foreground">
-                      {activeBaselines.length === 0
-                        ? "none"
-                        : activeBaselines.length === 1
-                        ? activeBaselines[0].name
-                        : `${activeBaselines.length} selected`}
-                    </span>
-                    <ChevronDown className="h-3 w-3 opacity-60" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 text-xs">
-                  <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Compare against
-                  </DropdownMenuLabel>
-                  {baselines.map((b) => (
-                    <DropdownMenuCheckboxItem
-                      key={b.id}
-                      checked={b.selected}
-                      onCheckedChange={() => baselinesApi.toggle(b.id)}
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-xs"
-                    >
-                      {b.name}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild className="text-xs">
-                    <Link to="/baselines" className="flex items-center gap-2">
-                      <Plus className="h-3 w-3" /> Manage baselines
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
               <Select value={model} onValueChange={setModel}>
                 <SelectTrigger className="h-7 w-[150px] text-xs">
                   <SelectValue />
@@ -322,31 +276,6 @@ function ExperimentPage() {
             </div>
           )}
 
-          {/* Baseline tab strip — only when comparing more than one */}
-          {activeBaselines.length > 1 && (
-            <div className="flex items-center gap-1 border-b border-border bg-muted/20 px-6 py-2">
-              <span className="mr-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Viewing
-              </span>
-              {activeBaselines.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => setViewBaselineId(b.id)}
-                  className={cn(
-                    "rounded-md px-2 py-1 text-[11px] transition-colors",
-                    effectiveViewId === b.id
-                      ? "bg-background text-foreground ring-1 ring-border"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {b.name}
-                </button>
-              ))}
-              <span className="ml-auto text-[10px] text-muted-foreground">
-                vs ClearMetric · <Link to="/baselines" className="hover:text-foreground hover:underline">edit</Link>
-              </span>
-            </div>
-          )}
 
 
           <div className="flex-1 overflow-y-auto">
