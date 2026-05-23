@@ -156,38 +156,53 @@ function ExperimentPage() {
 
       {/* Main */}
       <main className="flex flex-1 min-w-0 flex-col">
-        {/* Header */}
-        <div className="flex h-14 items-center justify-between border-b border-border px-6">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="truncate text-sm font-semibold">{def.name}</h1>
-              <Badge variant="secondary" className="text-[10px] font-normal">
-                {def.domain}
-              </Badge>
-            </div>
-            <div className="mt-0.5 truncate text-xs text-muted-foreground">{def.description}</div>
+        {/* Header — clean breadcrumb + title */}
+        <div className="border-b border-border px-6 pt-3 pb-3">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span>Experiment</span>
+            <span className="text-muted-foreground/50">/</span>
+            <span>{def.domain}</span>
+            <span className="text-muted-foreground/50">/</span>
+            <span className="text-muted-foreground/70">{def.owner}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Select value={model} onValueChange={setModel}>
-              <SelectTrigger className="h-7 w-[150px] text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {availableModels.map((m) => (
-                  <SelectItem key={m} value={m} className="text-xs">
-                    {m}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button size="sm" className="h-7 text-xs" onClick={runAll} disabled={running === "all"}>
-              {running === "all" ? (
-                <RotateCw className="mr-1 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Play className="mr-1 h-3.5 w-3.5" />
-              )}
-              {running === "all" ? "Running…" : "Run all"}
-            </Button>
+          <div className="mt-1 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="truncate text-base font-semibold tracking-tight">{def.name}</h1>
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 shrink-0 rounded-full",
+                  def.status === "tested" ? "bg-[var(--success)]" : "bg-muted-foreground/50",
+                )}
+                title={def.status === "tested" ? "Tested" : "Draft"}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={model} onValueChange={setModel}>
+                <SelectTrigger className="h-7 w-[150px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableModels.map((m) => (
+                    <SelectItem key={m} value={m} className="text-xs">
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                onClick={runAll}
+                disabled={running === "all"}
+              >
+                {running === "all" ? (
+                  <RotateCw className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Play className="mr-1 h-3.5 w-3.5" />
+                )}
+                {running === "all" ? "Running…" : "Run all"}
+              </Button>
+            </div>
           </div>
         </div>
 
