@@ -180,6 +180,22 @@ function ServePage() {
   );
 }
 
+function EndpointRow({ label, value, copied, onCopy }: { label: string; value: string; copied: boolean; onCopy: () => void }) {
+  return (
+    <div className="flex items-center gap-3 text-xs">
+      <span className="w-20 shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="flex-1 truncate font-mono text-foreground/90">{value}</span>
+      <button
+        onClick={onCopy}
+        className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        title="Copy"
+      >
+        {copied ? <Check className="h-3.5 w-3.5 text-[var(--success)]" /> : <Copy className="h-3.5 w-3.5" />}
+      </button>
+    </div>
+  );
+}
+
 function Stat({ value, label }: { value: string | number; label: string }) {
   return (
     <span className="flex items-baseline gap-1">
