@@ -40,7 +40,7 @@ export const ROLES: { id: Role; name: string; blurb: string }[] = [
 ];
 
 export function canSeeBilling(role: Role): boolean {
-  return role === "owner" || role === "admin";
+  return role === "owner" || role === "editor";
 }
 
 const KEY_SCENARIO = "clearmetric:billing-scenario";
@@ -49,19 +49,31 @@ const KEY_BONUS = "clearmetric:billing-bonus";
 const KEY_ROLE = "clearmetric:role";
 const EVENT = "clearmetric:billing-changed";
 
+const memory = new Map<string, unknown>();
+
 function read<T>(key: string, fallback: T): T {
+  if (memory.has(key)) return memory.get(key) as T;
   if (typeof window === "undefined") return fallback;
   try {
     const v = localStorage.getItem(key);
-    return v ? (JSON.parse(v) as T) : fallback;
+    const parsed = v ? (JSON.parse(v) as T) : fallback;
+    memory.set(key, parsed);
+    return parsed;
   } catch {
     return fallback;
   }
 }
 
 function write(key: string, value: unknown) {
-  localStorage.setItem(key, JSON.stringify(value));
-  window.dispatchEvent(new Event(EVENT));
+  memory.set(key, value);
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // localStorage may be unavailable (private mode, sandboxed iframe) — memory still updated.
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(EVENT));
+  }
 }
 
 function subscribe(cb: () => void) {
