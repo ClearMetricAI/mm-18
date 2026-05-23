@@ -276,16 +276,57 @@ function ExperimentPage() {
           )}
 
           <div className="flex-1 overflow-y-auto">
-            {/* Scorecards */}
-            <div className="grid grid-cols-3 gap-3 px-6 py-5">
-              <ScoreCard label="Without ClearMetric" value={`${scores.baseline}/${scores.total}`} tone="bad" />
-              <ScoreCard label="With ClearMetric" value={`${scores.cm}/${scores.total}`} tone="good" />
-              <ScoreCard
-                label="Improvement"
-                value={scores.total === 0 ? "—" : `+${improvement}%`}
-                tone="accent"
-              />
+            {/* ROI headline */}
+            <div className="px-6 py-5">
+              <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
+                <div className="text-base font-semibold text-foreground">
+                  {scores.questions === 0 ? (
+                    "No tests yet"
+                  ) : (
+                    <>
+                      Grounding changed the answer on{" "}
+                      <span className="text-primary">
+                        {scores.changed} of {scores.questions}
+                      </span>{" "}
+                      questions{" "}
+                      <span className="text-muted-foreground font-normal">({changedPct}%)</span>
+                    </>
+                  )}
+                </div>
+                <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>
+                    Ungrounded{" "}
+                    <span className="font-mono tabular-nums text-foreground">
+                      {scores.baseline}/{scores.total}
+                    </span>{" "}
+                    passed
+                  </span>
+                  <span className="text-muted-foreground/60">→</span>
+                  <span>
+                    Grounded{" "}
+                    <span className="font-mono tabular-nums text-foreground">
+                      {scores.cm}/{scores.total}
+                    </span>{" "}
+                    passed
+                  </span>
+                  <span className="text-muted-foreground/60">·</span>
+                  <span
+                    className={cn(
+                      "font-mono tabular-nums",
+                      improvement > 0
+                        ? "text-[var(--success)]"
+                        : improvement < 0
+                        ? "text-destructive"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {improvement > 0 ? "+" : ""}
+                    {scores.total === 0 ? "—" : `${improvement}%`}
+                  </span>
+                </div>
+              </div>
             </div>
+
 
             <div className="px-6">
               <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
