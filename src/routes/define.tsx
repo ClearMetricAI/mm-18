@@ -426,14 +426,68 @@ function DefinePage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  action,
+  children,
+}: {
+  label: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mb-1 flex items-center justify-between">
+        <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          {label}
+        </div>
+        {action}
+      </div>
       {children}
     </div>
   );
 }
+
+function DraftButton({ busy, onClick }: { busy: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={busy}
+      className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-60"
+      title="Draft with AI"
+    >
+      <Sparkles className={cn("h-3 w-3", busy && "animate-spin")} />
+      {busy ? "Drafting…" : "Draft with AI"}
+    </button>
+  );
+}
+
+function OriginBadge({ def }: { def: Definition }) {
+  if (def.driftFlag) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--warning-foreground)]">
+        <AlertTriangle className="h-2.5 w-2.5" />
+        Drifted
+      </span>
+    );
+  }
+  if (def.origin === "manual") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
+        <Pencil className="h-2.5 w-2.5" />
+        Manual
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
+      <Zap className="h-2.5 w-2.5" />
+      Auto
+    </span>
+  );
+}
+
+
 
 function FilterMenu({
   icon,
