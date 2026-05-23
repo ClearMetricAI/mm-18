@@ -735,13 +735,13 @@ function AskAI({ defName }: { defName: string }) {
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <div className="overflow-hidden rounded-md border border-border bg-background">
             <div className="border-b bg-destructive/10 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-destructive border-destructive/20">
-              Ungrounded · LLM alone
+              Baseline · metadata only
             </div>
             <div className="px-3 py-2.5 text-xs leading-relaxed">{result.baseline}</div>
           </div>
           <div className="overflow-hidden rounded-md border border-border bg-background">
             <div className="border-b bg-[var(--success)]/10 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-[var(--success)] border-[var(--success)]/20">
-              Grounded · LLM + your definitions
+              ClearMetric · metadata + definitions
             </div>
             <div className="px-3 py-2.5 text-xs leading-relaxed">{result.cm}</div>
           </div>
