@@ -1,0 +1,70 @@
+import { Link, useRouterState } from "@tanstack/react-router";
+import { Database, BookOpen, FlaskConical, Radio, Moon, Sun, Sparkles } from "lucide-react";
+import { useTheme } from "@/lib/theme";
+import { cn } from "@/lib/utils";
+
+const nav = [
+  { to: "/connect", label: "Connect", icon: Database },
+  { to: "/define", label: "Define", icon: BookOpen },
+  { to: "/experiment", label: "Experiment", icon: FlaskConical },
+  { to: "/serve", label: "Serve", icon: Radio },
+] as const;
+
+export function AppSidebar() {
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const { theme, toggle } = useTheme();
+
+  return (
+    <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+      <div className="flex h-14 items-center gap-2 px-4">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          <Sparkles className="h-4 w-4" />
+        </div>
+        <span className="text-sm font-semibold tracking-tight">ClearMetric</span>
+      </div>
+
+      <nav className="flex-1 px-2 py-2">
+        {nav.map(({ to, label, icon: Icon }) => {
+          const active = path === to || (to === "/define" && path === "/");
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={cn(
+                "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
+                active
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-sidebar-border p-2">
+        <button
+          onClick={toggle}
+          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+        >
+          {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          {theme === "light" ? "Dark mode" : "Light mode"}
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between border-b border-border px-8 py-5">
+      <div>
+        <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+        {description && <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>}
+      </div>
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
