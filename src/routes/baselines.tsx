@@ -21,10 +21,9 @@ function BaselinesPage() {
   const selectedCount = baselines.filter((b) => b.selected).length;
 
   return (
-    <div className="flex h-screen">
-      <AppSidebar />
-      <main className="flex min-w-0 flex-1 flex-col">
-        <PageHeader
+    <div className="flex h-screen flex-col">
+      <PageHeader
+
           title="Baselines"
           meta={`${baselines.length} total · ${selectedCount} active in experiments`}
           actions={
