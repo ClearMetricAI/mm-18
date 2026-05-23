@@ -47,6 +47,7 @@ export function AppSidebar() {
   const showBilling = canSeeBilling(role);
   const { theme, toggle } = useTheme();
   const { views, upsert, remove } = useViews();
+  const { openCount } = useInbox();
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<View | null>(null);
