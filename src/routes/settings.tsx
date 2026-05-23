@@ -173,3 +173,96 @@ function SettingsPage() {
     </div>
   );
 }
+
+function BillingSection() {
+  const { plan, used, total, scenario } = useBilling();
+  const pct = Math.min(100, (used / total) * 100);
+  const tone =
+    pct >= 100 ? "bg-destructive" : pct >= 80 ? "bg-amber-500" : "bg-foreground/70";
+
+  const buyPack = (credits: number, price: string) => {
+    addBonus(credits);
+    toast.success(`Added ${credits.toLocaleString()} credits — ${price}`);
+  };
+
+  return (
+    <Section title="Billing">
+      {/* Plan */}
+      <div className="mb-6 flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
+        <div className="text-sm">
+          <span className="font-medium">{plan.name}</span>
+          <span className="text-muted-foreground"> · {plan.price}</span>
+        </div>
+        <Link
+          to="/pricing"
+          className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+          Change
+        </Link>
+      </div>
+
+      {/* Usage */}
+      <div className="mb-6">
+        <div className="mb-1.5 flex items-baseline justify-between text-sm">
+          <span>
+            <span className="font-medium tabular-nums">{used.toLocaleString()}</span>
+            <span className="text-muted-foreground"> / {total.toLocaleString()} credits</span>
+          </span>
+          <span className="text-xs text-muted-foreground">resets Dec 14</span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className={cn("h-full transition-all", tone)}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <div className="mt-4 grid gap-1.5 text-sm">
+          {Object.entries(BREAKDOWN_TEAM).map(([label, n]) => (
+            <div key={label} className="flex items-center justify-between">
+              <span className="text-muted-foreground">{label}</span>
+              <span className="tabular-nums">{n.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Top up */}
+      <div className="mb-6">
+        <div className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Top up
+        </div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {TOP_UPS.map((t) => (
+            <button
+              key={t.credits}
+              onClick={() => buyPack(t.credits, t.price)}
+              className="rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:border-foreground hover:bg-accent"
+            >
+              <div className="text-sm font-medium tabular-nums">
+                {t.credits.toLocaleString()} credits
+              </div>
+              <div className="mt-0.5 text-xs text-muted-foreground">{t.price}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Scenario toggle (dev-only feel) */}
+      <div className="flex items-center justify-end gap-3 border-t border-dashed border-border pt-3 text-[10px] text-muted-foreground/60">
+        <span className="uppercase tracking-wider">Demo scenario</span>
+        {(["healthy", "warning", "hit"] as Scenario[]).map((s) => (
+          <button
+            key={s}
+            onClick={() => setScenario(s)}
+            className={cn(
+              "rounded px-2 py-0.5 capitalize hover:text-foreground",
+              scenario === s && "bg-muted text-foreground",
+            )}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </Section>
+  );
+}
