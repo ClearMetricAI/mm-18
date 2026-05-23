@@ -38,7 +38,10 @@ import {
   MoreHorizontal,
   Info,
   Gavel,
+  SlidersHorizontal,
+  Paperclip,
 } from "lucide-react";
+
 import { useMemo, useState } from "react";
 import {
   definitions,
