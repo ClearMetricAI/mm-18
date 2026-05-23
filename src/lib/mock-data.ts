@@ -396,15 +396,15 @@ export const testQuestions: TestQuestion[] = [
     question: "Does revenue include professional services?",
     criteria: ["Answer is 'no'", "Mentions professional services are excluded", "References net ARR basis"],
     baselineResponse:
-      "Yes, revenue typically includes all income streams including professional services unless otherwise specified.",
+      "Based on the `invoices` table, revenue appears to include all billing line items — there's a `type` column that suggests services and subscriptions are tracked together, so the answer depends on which report you're looking at.",
     cmResponse:
       "No. Net Revenue at this company explicitly excludes professional services, one-time fees, and refunds. It is reported on a net ARR basis.",
     baselinePass: [false, false, false],
     cmPass: [true, true, true],
     baselineReasons: [
-      "Answer says 'yes' — opposite of expected.",
-      "Does not mention professional services as excluded.",
-      "No reference to ARR or net basis.",
+      "Hedges rather than giving a definitive answer.",
+      "Infers from the `type` column but doesn't state services are excluded.",
+      "No reference to net ARR basis.",
     ],
     cmReasons: [
       "Answer begins with 'No.' — matches.",
@@ -417,15 +417,16 @@ export const testQuestions: TestQuestion[] = [
     definitionId: "def_net_revenue",
     question: "How is Net Revenue calculated?",
     criteria: ["References subscription invoice lines", "Subtracts refunds", "Mentions paid status filter"],
-    baselineResponse: "Net Revenue is gross revenue minus discounts, returns, and allowances.",
+    baselineResponse:
+      "Net Revenue is typically gross revenue minus discounts, returns, and allowances. From the schema, you'd likely sum `invoice_lines.amount` across the period.",
     cmResponse:
       "Net Revenue = SUM of paid subscription invoice lines for the period, minus refunds. Only invoices with status = 'paid' and type = 'subscription' are included.",
     baselinePass: [false, false, false],
     cmPass: [true, true, true],
     baselineReasons: [
-      "Generic accounting definition; no invoice line reference.",
-      "Says 'returns' not 'refunds' — not the company term.",
-      "No mention of paid status.",
+      "Uses generic accounting definition rather than company-specific.",
+      "Says 'returns', not 'refunds' — wrong term for this schema.",
+      "Doesn't filter by paid status.",
     ],
     cmReasons: [
       "Uses 'subscription invoice lines' verbatim.",
@@ -438,14 +439,15 @@ export const testQuestions: TestQuestion[] = [
     definitionId: "def_net_revenue",
     question: "Is Net Revenue the same as MRR × 12?",
     criteria: ["Answer is 'no'", "Distinguishes recurring run-rate from recognized revenue"],
-    baselineResponse: "Yes, you can approximate annual revenue by multiplying MRR by 12.",
+    baselineResponse:
+      "Roughly, yes — annualizing MRR is a common shortcut for ARR-style metrics. Both should be derivable from the `subscriptions` table.",
     cmResponse:
       "No. MRR × 12 is an annualized run-rate of active subscriptions. Net Revenue is the revenue actually recognized in the period from paid subscription invoices minus refunds.",
     baselinePass: [false, false],
     cmPass: [true, true],
     baselineReasons: [
-      "Says 'yes' — opposite of expected.",
-      "Treats MRR × 12 as equivalent; misses the distinction.",
+      "Says 'roughly yes' — opposite of the company convention.",
+      "Treats run-rate and recognized revenue as interchangeable.",
     ],
     cmReasons: [
       "Answer begins with 'No.' — matches.",
@@ -457,13 +459,14 @@ export const testQuestions: TestQuestion[] = [
     definitionId: "def_logo_churn",
     question: "Is logo churn weighted by revenue?",
     criteria: ["Answer is 'no'", "States it is account-count based"],
-    baselineResponse: "Logo churn is typically revenue-weighted to reflect customer value.",
+    baselineResponse:
+      "Logo churn is typically revenue-weighted to reflect customer value — that's the industry-standard interpretation.",
     cmResponse:
       "No. Logo Churn is the count of churned accounts divided by total accounts at the start of the period. It is not weighted by revenue.",
     baselinePass: [false, false],
     cmPass: [true, true],
     baselineReasons: [
-      "Says it is weighted — opposite of expected.",
+      "Uses generic industry definition rather than company-specific — opposite answer.",
       "No mention of account counts.",
     ],
     cmReasons: ["Explicit 'No.'", "Defines as account count over starting accounts."],
@@ -473,12 +476,16 @@ export const testQuestions: TestQuestion[] = [
     definitionId: "def_logo_churn",
     question: "What's the difference between logo churn and revenue churn?",
     criteria: ["Distinguishes account count vs revenue", "References downgrades for revenue churn"],
-    baselineResponse: "They are essentially the same metric expressed differently.",
+    baselineResponse:
+      "They're closely related and often used interchangeably depending on the report. Both are usually derivable from the `subscriptions` and `accounts` tables.",
     cmResponse:
       "Logo Churn counts cancelled accounts. Revenue Churn measures lost MRR from cancellations AND downgrades, divided by starting MRR. They can move independently.",
     baselinePass: [false, false],
     cmPass: [true, true],
-    baselineReasons: ["Conflates the two metrics.", "No mention of downgrades."],
+    baselineReasons: [
+      "Hedges — treats the two metrics as interchangeable.",
+      "No mention of downgrades.",
+    ],
     cmReasons: ["Clear contrast: account count vs MRR.", "Explicitly includes downgrades."],
   },
   {
@@ -486,12 +493,16 @@ export const testQuestions: TestQuestion[] = [
     definitionId: "def_mrr",
     question: "Does MRR include professional services?",
     criteria: ["Answer is 'no'", "References subscription-only scope"],
-    baselineResponse: "MRR usually represents recurring revenue, which may include services if recurring.",
+    baselineResponse:
+      "MRR can be calculated in several ways depending on the report. If services are billed on a recurring cadence, they may be included.",
     cmResponse:
       "No. MRR includes only active subscription contract values, normalized monthly. Professional services are excluded.",
     baselinePass: [false, false],
     cmPass: [true, true],
-    baselineReasons: ["Hedges with 'may include' — not a clear no.", "Doesn't constrain to subscriptions."],
+    baselineReasons: [
+      "Hedges with 'may be included' — not a clear no.",
+      "Doesn't constrain to subscriptions.",
+    ],
     cmReasons: ["Explicit 'No.'", "States 'only active subscription contract values'."],
   },
   {
@@ -499,12 +510,16 @@ export const testQuestions: TestQuestion[] = [
     definitionId: "def_cac",
     question: "What's included in CAC?",
     criteria: ["Mentions fully-loaded S&M spend", "References new customers in same period"],
-    baselineResponse: "CAC is marketing spend divided by new customers.",
+    baselineResponse:
+      "CAC is typically marketing spend divided by new customers acquired. Some companies also include sales spend depending on how they define it.",
     cmResponse:
       "CAC = (fully-loaded sales spend + marketing spend) for the period, divided by new customers acquired in the same period. Sales spend is included, not just marketing.",
     baselinePass: [false, false],
     cmPass: [true, true],
-    baselineReasons: ["Omits sales spend entirely.", "Doesn't specify same-period matching."],
+    baselineReasons: [
+      "Hedges on whether sales spend counts — uses generic textbook definition.",
+      "Doesn't specify same-period matching.",
+    ],
     cmReasons: ["Explicitly 'fully-loaded sales + marketing'.", "Matches new customers to same period."],
   },
   {
@@ -512,13 +527,14 @@ export const testQuestions: TestQuestion[] = [
     definitionId: "def_mau",
     question: "Are internal users counted in MAU?",
     criteria: ["Answer is 'no'", "References 30-day window", "Mentions bot exclusion"],
-    baselineResponse: "MAU usually counts all active users in the past month.",
+    baselineResponse:
+      "MAU usually counts all distinct active users over the past month. The `events` table has an `is_internal` flag, so it depends on whether the report filters on it.",
     cmResponse:
       "No. MAU excludes internal users and bots. It counts distinct users with at least one qualifying event in the trailing 30 days.",
     baselinePass: [false, false, false],
     cmPass: [true, true, true],
     baselineReasons: [
-      "Doesn't exclude internal users.",
+      "Hedges — sees the flag but doesn't know it's always applied.",
       "Says 'past month', not trailing 30 days.",
       "No mention of bots.",
     ],
@@ -529,12 +545,16 @@ export const testQuestions: TestQuestion[] = [
     definitionId: "def_nrr",
     question: "Does NRR include new business?",
     criteria: ["Answer is 'no'", "Mentions cohort of customers active at period start"],
-    baselineResponse: "NRR generally includes all revenue movements including new sales.",
+    baselineResponse:
+      "Net Revenue Retention generally captures expansion, churn, and downgrades. Whether new business is included can vary — some companies report a combined growth metric.",
     cmResponse:
       "No. NRR is cohort-based on customers active at the start of the period. New business is excluded — it's measured separately as new ARR.",
     baselinePass: [false, false],
     cmPass: [true, true],
-    baselineReasons: ["Says new sales are included — incorrect.", "No cohort framing."],
+    baselineReasons: [
+      "Hedges — uses generic industry framing instead of company convention.",
+      "No cohort framing.",
+    ],
     cmReasons: ["Explicit 'No.'", "States cohort starts at period start."],
   },
   {
@@ -542,13 +562,22 @@ export const testQuestions: TestQuestion[] = [
     definitionId: "def_pipeline",
     question: "What stages count toward Qualified Pipeline?",
     criteria: ["Mentions Stage 2 (Discovery) or later", "Excludes Closed Lost", "References 180-day age cap"],
-    baselineResponse: "Qualified pipeline is usually anything past initial qualification.",
+    baselineResponse:
+      "Looking at the `opportunities` table, qualified pipeline typically covers anything past the initial qualification stage with an open status.",
     cmResponse:
       "Qualified Pipeline = open opportunities at Stage 2 (Discovery) or later, with ACV summed. Closed Lost is excluded, and opportunities older than 180 days are dropped.",
     baselinePass: [false, false, false],
     cmPass: [true, true, true],
-    baselineReasons: ["Vague — no specific stage.", "Doesn't mention Closed Lost.", "No age cap."],
-    cmReasons: ["Names 'Stage 2 (Discovery) or later'.", "Explicitly excludes Closed Lost.", "Cites 180-day cap."],
+    baselineReasons: [
+      "Infers from schema but doesn't name a specific stage.",
+      "Doesn't explicitly exclude Closed Lost.",
+      "No age cap.",
+    ],
+    cmReasons: [
+      "Names 'Stage 2 (Discovery) or later'.",
+      "Explicitly excludes Closed Lost.",
+      "Cites 180-day cap.",
+    ],
   },
 ];
 
