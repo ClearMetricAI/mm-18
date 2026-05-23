@@ -10,10 +10,14 @@ import { toast } from "sonner";
 import {
   useBilling,
   setScenario,
+  setRole,
   addBonus,
+  canSeeBilling,
   TOP_UPS,
   BREAKDOWN_TEAM,
+  ROLES,
   type Scenario,
+  type Role,
 } from "@/lib/billing-mock";
 import { cn } from "@/lib/utils";
 
