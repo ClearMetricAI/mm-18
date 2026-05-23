@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ServeRouteImport } from './routes/serve'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ExperimentRouteImport } from './routes/experiment'
 import { Route as DefineRouteImport } from './routes/define'
 import { Route as IndexRouteImport } from './routes/index'
@@ -23,6 +24,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const ServeRoute = ServeRouteImport.update({
   id: '/serve',
   path: '/serve',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExperimentRoute = ExperimentRouteImport.update({
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
+  '/pricing': typeof PricingRoute
   '/serve': typeof ServeRoute
   '/settings': typeof SettingsRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
+  '/pricing': typeof PricingRoute
   '/serve': typeof ServeRoute
   '/settings': typeof SettingsRoute
 }
@@ -60,21 +68,36 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
+  '/pricing': typeof PricingRoute
   '/serve': typeof ServeRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/define' | '/experiment' | '/serve' | '/settings'
+  fullPaths:
+    | '/'
+    | '/define'
+    | '/experiment'
+    | '/pricing'
+    | '/serve'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/define' | '/experiment' | '/serve' | '/settings'
-  id: '__root__' | '/' | '/define' | '/experiment' | '/serve' | '/settings'
+  to: '/' | '/define' | '/experiment' | '/pricing' | '/serve' | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/define'
+    | '/experiment'
+    | '/pricing'
+    | '/serve'
+    | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DefineRoute: typeof DefineRoute
   ExperimentRoute: typeof ExperimentRoute
+  PricingRoute: typeof PricingRoute
   ServeRoute: typeof ServeRoute
   SettingsRoute: typeof SettingsRoute
 }
@@ -93,6 +116,13 @@ declare module '@tanstack/react-router' {
       path: '/serve'
       fullPath: '/serve'
       preLoaderRoute: typeof ServeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/experiment': {
@@ -123,6 +153,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DefineRoute: DefineRoute,
   ExperimentRoute: ExperimentRoute,
+  PricingRoute: PricingRoute,
   ServeRoute: ServeRoute,
   SettingsRoute: SettingsRoute,
 }
