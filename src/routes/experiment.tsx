@@ -72,9 +72,27 @@ function ExperimentPage() {
   const [model, setModel] = useState(availableModels[0]);
   const [running, setRunning] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
+  const [questionSuggestions, setQuestionSuggestions] = useState<TestQuestionSuggestion[]>([]);
+  const [dismissedSugs, setDismissedSugs] = useState<Set<string>>(new Set());
 
   const def = definitions.find((d) => d.id === selected) ?? definitions[0];
   const qs = questions.filter((q) => q.definitionId === def.id);
+
+  // Auto-load engine suggestions for any def that has no questions yet.
+  useEffect(() => {
+    if (qs.length === 0 && questionSuggestions.every((s) => !s.id.includes(def.id))) {
+      const fresh = suggestTestQuestions(def).map((s) => ({
+        ...s,
+        id: `${s.id}_${def.id}`,
+      }));
+      setQuestionSuggestions((prev) => [...prev, ...fresh]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [def.id]);
+
+  const visibleSugs = questionSuggestions.filter(
+    (s) => s.id.endsWith(def.id) && !dismissedSugs.has(s.id),
+  );
 
   const filteredDefs = useMemo(() => {
     const q = defQuery.toLowerCase();
