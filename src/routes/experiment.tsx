@@ -72,11 +72,12 @@ function ExperimentPage() {
   const [model, setModel] = useState(availableModels[0]);
   const [running, setRunning] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
-  const [showBaseline, setShowBaseline] = useState(false);
-  const [sysPrompt, setSysPrompt] = useState("");
-  const [extraContext, setExtraContext] = useState("");
-  const [files, setFiles] = useState<{ name: string; size: number }[]>([]);
-  const baselineCustom = sysPrompt.trim().length > 0 || extraContext.trim().length > 0 || files.length > 0;
+  const baselines = useBaselines();
+  const activeBaselines = baselines.filter((b) => b.selected);
+  const [viewBaselineId, setViewBaselineId] = useState<string>("cold");
+  // Make sure view always points at a selected baseline
+  const effectiveViewId =
+    activeBaselines.find((b) => b.id === viewBaselineId)?.id ?? activeBaselines[0]?.id ?? "cold";
 
   const def = definitions.find((d) => d.id === selected) ?? definitions[0];
   const qs = questions.filter((q) => q.definitionId === def.id);
