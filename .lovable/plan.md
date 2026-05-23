@@ -1,92 +1,67 @@
-# ClearMetric V1 — tailored update plan
+# Plan: Frontend as a Review Queue
 
-Kill the Baselines library. Experiment has one fixed baseline ("model + schema metadata"). Focus the MVP on the three things that drive value: file-upload onboarding, an ROI-shaped Serve page, and a credible Experiment comparison.
+## Core principle
 
----
+The engine is the moat. The frontend is dumb: it shows engine-produced items and gives the user three buttons — **Accept · Edit · Dismiss**. Same pattern for every content type. No "create from scratch" flows as primary actions; manual create stays available but secondary.
 
-## 1. Remove the Baselines surface area
+## What changes
 
-- Delete `src/routes/baselines.tsx`.
-- Delete `src/lib/baselines-store.ts`.
-- Remove the Baselines item from `src/components/AppSidebar.tsx`.
-- In `src/routes/experiment.tsx`: remove the baselines dropdown, the multi-baseline tab strip, all `useBaselines` / `baselinesApi` usage, and `viewBaselineId` state.
-- Let TanStack regenerate `routeTree.gen.ts` automatically.
+### 1. New `<ReviewCard />` primitive (`src/components/review-card.tsx`)
 
-Nav becomes: **Define · Experiment · Serve** (primary) + **Settings** (utility).
+Single component used everywhere. Props:
+- `kind`: `"definition" | "test-question" | "drift" | "improvement" | "alias" | "criteria"`
+- `title`, `body` (the suggestion content, kind-specific renderer)
+- `rationale` (one-line "why the engine suggested this")
+- `onAccept`, `onEdit`, `onDismiss`
 
----
+Visual: subtle card, small `Sparkles` icon + kind label, body, rationale in muted text, three buttons right-aligned. That's it. No crowding.
 
-## 2. Experiment — realistic, single baseline
+### 2. Add a "Review" inbox surfaced inline on each page
 
-The baseline is conceptually fixed: *the LLM with model metadata (table names, columns, measures, source descriptions) but no governed definitions.* No picker.
+Not a new nav item. Each page gets a collapsible **"N suggestions from the engine"** strip at the top that expands into a stack of `<ReviewCard />`s. When empty, the strip hides.
 
-**UI** (`src/routes/experiment.tsx`)
-- Column labels: **Baseline** with small sub-label *"metadata only"* and **ClearMetric** with *"metadata + definitions"*. No banner, no disclaimer.
-- Update the Judge chip tooltip to mention the metadata framing.
-- Keep judge per-criterion reasons (already in the data model) rendering under each criterion in the expanded row — verify this still works after the dropdown removal.
+- **Define page**: drafted definitions (from connected sources/uploads), improvement suggestions, alias suggestions, drift alerts.
+- **Experiment page**: suggested test questions for the selected definition, criteria refinement suggestions after runs.
+- **Serve page**: alias suggestions for "Never Requested" definitions, drift alerts surfaced from sync.
 
-**Mock data** (`src/lib/mock-data.ts`)
-- Rewrite `baselineResponse` strings on seeded `testQuestions` so they read like an AI that can see the schema but doesn't know business rules. Mix the three failure modes:
-  - **Hedging** — "Revenue can be calculated several ways depending on the report…"
-  - **Schema inference** — "Based on the `invoices` table, revenue appears to include all billing line items…"
-  - **Generic textbook** — "Churn typically includes both cancellations and downgrades…"
-- Rewrite each `baselineReasons[]` to one-line judge-style reasons explaining *why* it failed: e.g. "References invoices but does not specify net ARR", "Hedges rather than giving a definitive answer", "Uses generic industry definition rather than company-specific".
-- Update `draftTestQuestions()` placeholders and criteria slightly to reward specificity (e.g. "uses company-specific definition, not industry generic").
+One pattern, applied three places. No separate "Review Queue" route — it lives where the work lives.
 
----
+### 3. Mock engine in `src/lib/engine.ts`
 
-## 3. Serve — ROI dashboard
+Single module that fakes everything the backend will eventually do. Pure functions returning typed suggestions:
+- `draftDefinitionsFromSource(sourceId)` → `Definition[]` (draft status)
+- `suggestTestQuestions(def)` → `{ question, criterion }[]`
+- `detectDrift(defs)` → `DriftAlert[]`
+- `suggestImprovements(def, failedCriteria)` → `Improvement[]`
+- `suggestAliases(def)` → `string[]`
+- `refineCriteria(runHistory)` → `CriteriaEdit[]`
 
-Rework `src/routes/serve.tsx` into four sections, top to bottom:
+All return seeded mock data today; swap for real RPCs later. Keeps frontend ignorant of how suggestions are produced.
 
-1. **ROI summary line** — auto-generated, factual, copy-pasteable:
-   *"{X} questions answered with governed definitions this week across {Y} AI agents and {Z} users."* Small copy icon at the end.
-2. **Stats row** — Today · This Week · Users · Agents · p50 Latency. (Adds Users + Agents to what exists.)
-3. **Usage insights** — two columns:
-   - **Most Requested** — definitions ranked by call count with a thin inline bar.
-   - **Never Requested** — definitions where `serveToAi === true` but absent from `activityLog`. Muted "Unused" pill. Hint underneath: *"Consider renaming or checking if agents can find these definitions."*
-4. **Activity log** — current table + a new **User** column (data already present). Keep filters and expandable response JSON.
+### 4. Page-level simplifications
 
-**Move out of Serve, into Settings:**
-- The MCP **Endpoint + API key** rows and the **Connect your agent** snippet tabs (Claude / Cursor / OpenAI / LangChain). Extract them to `src/components/mcp-connect.tsx` first, then delete from Serve and mount in Settings.
+- **Define**: demote "+ New definition" button to a secondary action in a dropdown next to the primary "Review N suggestions" affordance. Drift flag on a row becomes a `<ReviewCard />` in the strip, not inline noise.
+- **Experiment**: remove "draft test questions" button. Selecting a definition auto-populates the suggestion strip with engine-generated test questions; user accepts the ones they want into the run set.
+- **Serve**: "Never Requested" pills get a one-click "See why" that opens the alias suggestion as a review card.
+- **Settings**: file upload toast changes from "Found N definitions" to "Drafted N definitions — review on Define." Drafts land in Define's review strip.
 
-**Mock data tweaks** — add a few activity rows and make sure 2–3 `serveToAi: true` definitions have zero calls so "Never Requested" isn't empty.
+### 5. What we don't do
 
----
+- No new nav item.
+- No separate routes.
+- No backend wiring — `engine.ts` stays mock.
+- No changes to `mock-data.ts` shape beyond adding light suggestion seeds.
+- No redesign of existing tables/lists — only add the strip above them.
 
-## 4. Settings — file upload as a data source
+## Files touched
 
-In `src/routes/settings.tsx`:
+- create `src/components/review-card.tsx`
+- create `src/lib/engine.ts` (mock suggestion producer + types)
+- edit `src/routes/define.tsx` — add suggestion strip, demote manual create
+- edit `src/routes/experiment.tsx` — replace draft-tests button with auto-populated suggestion strip
+- edit `src/routes/serve.tsx` — wire "Never Requested" pills to alias review cards
+- edit `src/routes/settings.tsx` — update upload toast copy
 
-- Add an **"Upload file"** button next to "Add source" in Data sources. Accepts CSV / XLSX / PDF / DOCX / MD / YAML.
-- On file pick (mock — no real parsing in V1):
-  - Append a new source card: type badge **"Upload"**, detail *"{N} definitions extracted"*, today's date, **no Sync button**.
-  - Toast: *"Found N definitions in {filename}. Review them on Define."*
-- Seed one example upload in `mock-data.ts` so the pattern is visible on first load.
-- Extend the `DataSource` mock type with `type: "powerbi" | "snowflake" | "salesforce" | "manual" | "upload"` if needed.
+## Out of scope
 
-**New "MCP endpoint" section on Settings** — endpoint URL row, API key row, connect-snippet tabs (the components extracted from Serve). MCP config lives here (input); MCP usage lives on Serve (output).
-
----
-
-## 5. Routing polish
-
-- `src/routes/index.tsx`: redirect `/` → `/define` via `beforeLoad: () => redirect({ to: '/define' })`. No welcome screen.
-
----
-
-## Build order
-
-1. **Remove Baselines** (§1) — unblocks the rest of Experiment.
-2. **Experiment baseline reframe** (§2) — labels + rewritten mock responses/reasons.
-3. **Serve ROI dashboard** + move MCP connect to Settings (§3 + part of §4).
-4. **Settings file upload** (§4).
-5. **Index redirect** (§5).
-
-## Technical notes
-
-- Pure frontend / mock-data work. No backend, no new packages, no schema changes.
-- All MCP "connect" components get extracted to `src/components/mcp-connect.tsx` before being deleted from Serve, so the snippets aren't lost.
-- Keep semantic tokens (`text-muted-foreground`, `bg-[var(--success)]`, etc.) — no raw colors.
-
-Out of scope for this pass: real file parsing / LLM extraction, real MCP traffic, real judge calls, the Power BI connector — all remain mocked or deferred.
+Real engine, real drift detection, real grading, real alias inference. All deferred to backend. Frontend ships the review pattern with mocks so the shape is locked in before backend lands.
