@@ -115,6 +115,10 @@ export function setPlan(id: Plan["id"]) {
   write(KEY_PLAN, id);
 }
 
+export function setRole(r: Role) {
+  write(KEY_ROLE, r);
+}
+
 export function addBonus(credits: number) {
   const current = read<number>(KEY_BONUS, 0);
   write(KEY_BONUS, current + credits);
