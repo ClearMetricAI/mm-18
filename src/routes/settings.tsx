@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { PageHeader } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,15 @@ import { Plus, RefreshCw, Upload } from "lucide-react";
 import { dataSources as seedSources, llmKeys, type DataSource } from "@/lib/mock-data";
 import { McpConnectPanel } from "@/components/mcp-connect";
 import { toast } from "sonner";
+import {
+  useBilling,
+  setScenario,
+  addBonus,
+  TOP_UPS,
+  BREAKDOWN_TEAM,
+  type Scenario,
+} from "@/lib/billing-mock";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/settings")({ component: SettingsPage });
 
