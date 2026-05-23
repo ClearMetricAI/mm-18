@@ -92,28 +92,45 @@ function DefinePage() {
     setOpenId(id);
   };
 
+  const inView = Boolean(activeView);
+
   return (
     <div className="mx-auto flex h-screen max-w-3xl flex-col">
       <header className="px-6 pb-2 pt-8">
-        <h1 className="text-xl font-semibold">Definitions</h1>
-        <div className="mt-4 flex items-center gap-1 border-b border-border">
-          <TabBtn active={tab === "inbox"} onClick={() => setTab("inbox")}>
-            Inbox
-            {suggestions.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                {suggestions.length}
-              </span>
-            )}
-          </TabBtn>
-          <TabBtn active={tab === "library"} onClick={() => setTab("library")}>
-            Library
-            <span className="ml-1.5 text-[10px] text-muted-foreground">{defs.length}</span>
-          </TabBtn>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold">
+            {activeView ? activeView.name : "Definitions"}
+          </h1>
+          {activeView && (
+            <button
+              onClick={() => navigate({ to: "/define", search: {} })}
+              className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              title="Exit view"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
+        {!inView && (
+          <div className="mt-4 flex items-center gap-1 border-b border-border">
+            <TabBtn active={tab === "inbox"} onClick={() => setTab("inbox")}>
+              Inbox
+              {suggestions.length > 0 && (
+                <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                  {suggestions.length}
+                </span>
+              )}
+            </TabBtn>
+            <TabBtn active={tab === "library"} onClick={() => setTab("library")}>
+              Library
+              <span className="ml-1.5 text-[10px] text-muted-foreground">{defs.length}</span>
+            </TabBtn>
+          </div>
+        )}
       </header>
 
       <div className="flex-1 overflow-y-auto px-6 pb-16">
-        {tab === "inbox" && (
+        {!inView && tab === "inbox" && (
           <div className="space-y-6 pt-4">
             {drifts.length > 0 && (
               <SectionGroup
