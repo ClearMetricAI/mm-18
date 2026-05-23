@@ -292,7 +292,14 @@ function DefinePage() {
       <div className="flex flex-1 min-h-0">
         <div className="flex-1 overflow-auto">
           {/* Sticky column header */}
-          <div className="sticky top-0 z-10 grid grid-cols-[1fr_180px_60px] items-center gap-3 border-b border-border bg-background/95 px-6 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground backdrop-blur">
+          <div className="sticky top-0 z-10 grid grid-cols-[28px_1fr_180px_60px] items-center gap-3 border-b border-border bg-background/95 px-6 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground backdrop-blur">
+            <div className="flex items-center">
+              <Checkbox
+                checked={allChecked ? true : someChecked ? "indeterminate" : false}
+                onCheckedChange={toggleAll}
+                aria-label="Select all"
+              />
+            </div>
             <div>Definition</div>
             <div>Owner</div>
             <div className="text-right">AI</div>
@@ -309,15 +316,31 @@ function DefinePage() {
                 </div>
               )}
               {g.items.map((d) => (
-                <button
+                <div
                   key={d.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedId(d.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedId(d.id);
+                    }
+                  }}
                   className={cn(
-                    "grid w-full grid-cols-[1fr_180px_60px] items-center gap-3 border-b border-border/60 px-6 py-1.5 text-left transition-colors hover:bg-accent/50",
+                    "grid w-full cursor-pointer grid-cols-[28px_1fr_180px_60px] items-center gap-3 border-b border-border/60 px-6 py-1.5 text-left transition-colors hover:bg-accent/50",
                     selectedId === d.id && "bg-accent",
+                    checked.has(d.id) && "bg-accent/40",
                   )}
                   title={d.description}
                 >
+                  <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={checked.has(d.id)}
+                      onCheckedChange={() => toggleCheck(d.id)}
+                      aria-label={`Select ${d.name}`}
+                    />
+                  </div>
                   <div className="flex min-w-0 items-center gap-2">
                     <span
                       className={cn(
@@ -336,7 +359,7 @@ function DefinePage() {
                   <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                     <Switch checked={d.serveToAi} onCheckedChange={() => toggleServe(d.id)} />
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           ))}
