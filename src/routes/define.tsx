@@ -51,6 +51,8 @@ function DefinePage() {
   const [groupBy, setGroupBy] = useState<GroupBy>("domain");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drafting, setDrafting] = useState<"description" | "formula" | null>(null);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const runDraft = async (def: Definition, field: "description" | "formula") => {
     setDrafting(field);
