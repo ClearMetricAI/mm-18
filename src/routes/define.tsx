@@ -242,30 +242,20 @@ function DefinePage() {
           </div>
         )}
 
-        {tab === "library" && (
+        {(inView || tab === "library") && (
           <div className="pt-4">
             {activeView && (
-              <div className="mb-3 flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-xs">
-                <span className="font-medium">{activeView.name}</span>
-                <span className="text-muted-foreground">
+              <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
+                <span>
                   {approved.length} of {defs.length}
                 </span>
-                <div className="ml-auto flex items-center gap-0.5">
-                  <button
-                    onClick={() => setEditorOpen(true)}
-                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                    title="Edit view"
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => navigate({ to: "/define", search: {} })}
-                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                    title="Clear view"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setEditorOpen(true)}
+                  className="rounded p-1 hover:bg-accent hover:text-foreground"
+                  title="Edit filters"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
               </div>
             )}
             <div className="mb-2 flex items-center gap-2">
