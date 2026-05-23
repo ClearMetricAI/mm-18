@@ -9,7 +9,11 @@ import {
 } from "@/components/ui/select";
 import { useMemo, useState } from "react";
 import { activityLog, REF_TS } from "@/lib/mock-data";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Copy, Check } from "lucide-react";
+
+const MCP_ENDPOINT = "https://mcp.clearmetric.ai/org_contoso/v1";
+const MCP_KEY_MASKED = "cm_live_••••••••••••••••2f8a";
+const MCP_KEY_FULL = "cm_live_full_key_redacted";
 
 export const Route = createFileRoute("/serve")({ component: ServePage });
 
@@ -30,6 +34,13 @@ function ServePage() {
   const [agent, setAgent] = useState("all");
   const [user, setUser] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const copy = (key: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 1500);
+  };
 
   const agents = useMemo(() => Array.from(new Set(activityLog.map((a) => a.agent))), []);
   const users = useMemo(() => Array.from(new Set(activityLog.map((a) => a.user))), []);
@@ -59,6 +70,14 @@ function ServePage() {
   return (
     <div className="flex h-screen flex-col">
       <PageHeader title="Serve" />
+
+      {/* MCP endpoint */}
+      <div className="space-y-1.5 border-b border-border bg-muted/20 px-6 py-3">
+        <EndpointRow label="Endpoint" value={MCP_ENDPOINT} copied={copied === "url"} onCopy={() => copy("url", MCP_ENDPOINT)} />
+        <EndpointRow label="API key" value={MCP_KEY_MASKED} copied={copied === "key"} onCopy={() => copy("key", MCP_KEY_FULL)} />
+      </div>
+
+
 
       {/* Pulse */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border px-6 py-3 text-xs">
