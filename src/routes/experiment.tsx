@@ -645,6 +645,8 @@ function ScoreCard({
 
 function ResponsePanel({
   label,
+  sublabel,
+  tooltip,
   tone,
   text,
   passed,
@@ -652,6 +654,8 @@ function ResponsePanel({
   criteria,
 }: {
   label: string;
+  sublabel?: string;
+  tooltip?: string;
   tone: "good" | "bad";
   text: string;
   passed: boolean[];
@@ -671,9 +675,25 @@ function ResponsePanel({
           headerCls,
         )}
       >
-        <span>{label}</span>
+        <span className="flex items-center gap-1.5">
+          <span>{label}</span>
+          {sublabel && (
+            <span className="font-normal normal-case tracking-normal opacity-70">· {sublabel}</span>
+          )}
+          {tooltip && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3 w-3 cursor-help opacity-70" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[240px] text-xs">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </span>
         <span className="font-mono">{passCount}/{passed.length}</span>
       </div>
+
       <div className="px-3 py-2.5 text-xs leading-relaxed">{text}</div>
       <div className="border-t border-border bg-muted/20 px-3 py-2">
         <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
