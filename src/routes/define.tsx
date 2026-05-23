@@ -30,15 +30,21 @@ export const Route = createFileRoute("/define")({
 type Tab = "inbox" | "library";
 
 function DefinePage() {
+  const { view: viewId } = Route.useSearch();
+  const { views } = useViews();
+  const navigate = useNavigate();
+  const activeView = views.find((v) => v.id === viewId) ?? null;
+
   const [defs, setDefs] = useState<Definition[]>(seedDefs);
   const [suggestions, setSuggestions] = useState<Suggestion[]>(() => [
     ...suggestDefinitionDrafts(),
     ...suggestDriftAlerts(seedDefs),
     ...suggestImprovements(seedDefs),
   ]);
-  const [tab, setTab] = useState<Tab>("inbox");
+  const [tab, setTab] = useState<Tab>(activeView ? "library" : "inbox");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const dismiss = (id: string) =>
     setSuggestions((prev) => prev.filter((s) => s.id !== id));
@@ -49,11 +55,15 @@ function DefinePage() {
 
   const approved = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return defs.filter(
-      (d) =>
-        !q || d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q),
-    );
-  }, [defs, query]);
+    return defs.filter((d) => {
+      if (activeView && !matchesView(d, activeView)) return false;
+      if (!q) return true;
+      return (
+        d.name.toLowerCase().includes(q) ||
+        d.description.toLowerCase().includes(q)
+      );
+    });
+  }, [defs, query, activeView]);
 
   const toggleServe = (id: string) =>
     setDefs((prev) => prev.map((d) => (d.id === id ? { ...d, serveToAi: !d.serveToAi } : d)));
