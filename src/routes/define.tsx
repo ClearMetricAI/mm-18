@@ -33,6 +33,8 @@ type Tab = "inbox" | "library";
 function DefinePage() {
   const { view: viewId } = Route.useSearch();
   const { views, upsert: upsertView } = useViews();
+  const { scenario } = useBilling();
+  const paused = scenario === "hit";
   const navigate = useNavigate();
   const activeView = views.find((v) => v.id === viewId) ?? null;
 
@@ -131,7 +133,15 @@ function DefinePage() {
       </header>
 
       <div className="flex-1 overflow-y-auto px-6 pb-16">
-        {!inView && tab === "inbox" && (
+        {!inView && tab === "inbox" && paused && (
+          <div className="pt-4">
+            <div className="rounded-md border border-dashed border-border py-12 text-center text-xs text-muted-foreground">
+              Engine paused. Top up to resume.
+            </div>
+          </div>
+        )}
+
+        {!inView && tab === "inbox" && !paused && (
           <div className="space-y-6 pt-4">
             {drifts.length > 0 && (
               <SectionGroup
