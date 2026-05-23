@@ -1,94 +1,77 @@
-## Read against the strategy
+# AI assist for ClearMetric — minimal cut
 
-The strategy doc is unambiguous about what matters:
+Add a single `✨ Draft with AI` pattern that works for both auto-generated and manual definitions, plus a drift signal and AI-generated test questions. No new pages, no chat panel, no review queue.
 
-- **Define** is the timeless value (the dictionary).
-- **Experiment** is the wedge — *"the Experiment page IS the demo. The product sells itself."*
-- **Serve** is the production loop — definitions go to AI via MCP, every call logged for audit.
-- Everything else is plumbing.
+## Scope
 
-The current app is close but the narrative is muddled in three specific places:
+Four UI touchpoints. One data-model addition. No backend wiring yet (mock the AI call so the UX is real and reviewable; swap to Lovable AI later in one place).
 
-### 1. Sidebar order doesn't tell the story
+### 1. Define — origin badge in drawer header
+Tiny inline badge next to the definition name showing provenance:
+- `⚡ Auto · {source}` — engine-generated
+- `✏️ Manual` — user-created
+- `⚠️ Drifted` — replaces the auto badge when `driftFlag` is true (amber)
 
-Today: `Connect · Define · Experiment · Serve`. Connect is plumbing but it's listed first, before the actual product. The story the strategy tells is `Define → prove with Experiment → Serve to AI`. Connect should be a low-priority settings entry, not the front door.
+Purely informational. No filtering, no separate tab.
 
-**Fix:** reorder to `Define · Experiment · Serve · Settings` (rename Connect → Settings, demote to bottom of the nav near the theme toggle).
+### 2. Define — ✨ Draft with AI on Description and Formula
+Small `✨` icon-button in the top-right of each field's label row. Click:
+- Shows a 600ms shimmer over the field
+- Replaces field content with mock AI draft built from name + domain + sibling fields
+- User edits inline as normal, saves on blur
 
-### 2. Connect is a grab bag of three unrelated things
+Same button works for empty fields (manual creation) and populated fields (regenerate).
 
-It currently holds:
-- **Data sources** (Power BI, SQL) — these feed Define.
-- **LLM keys** (answering model, judge model) — these power Experiment.
-- **MCP endpoint URL + key + live call count** — this is the Serve runtime, duplicated.
-
-That last item is the most damaging: the MCP endpoint card on Connect says "Active · 312 calls this week" which is exactly what the Serve pulse line shows. Two sources of truth for the same fact.
-
-**Fix:**
-- Move the **MCP endpoint URL + API key** to the top of the Serve page as a single thin "Endpoint" strip above the Pulse line. Serve is the right home: it's the page that proves the endpoint is doing something.
-- Keep **data sources** and **LLM keys** in a renamed **Settings** page (was Connect). No live activity counters there — just connection state.
-
-This collapses Connect from three sections to two, removes the duplicate runtime view, and puts the copyable endpoint next to the audit log that proves it works.
-
-### 3. The first impression is the dictionary, not the demo
-
-`/` redirects to `/define`. Right for daily users; wrong for first-time visitors and demo prospects who should land on the Experiment scorecard (the explicit "product sells itself" page).
-
-**Fix:** I'll ask about this — see Question below — because changing it affects daily-user muscle memory.
-
-### What I am NOT changing
-
-- **Define** page: already at the right minimal shape (3-column table, slim header, drawer). Leave alone.
-- **Experiment** page: heavy by necessity — this is the pitch. It earns its weight. Leave alone.
-- **Serve** page: the recent rework (per-user/per-agent grouping, expandable rows with full response) is the right audit shape per strategy. Leave the body alone; just add the endpoint strip at the top.
-- **Mock data**: no changes needed.
-
----
-
-## Plan
-
-### Step 1 — Reorder + rename sidebar
-
-`src/components/AppSidebar.tsx`: change `nav` order to Define, Experiment, Serve. Move "Settings" (the renamed Connect, icon `Settings`) to the bottom group next to the theme toggle so it visually reads as a utility, not a top-level workflow step.
-
-### Step 2 — Move MCP endpoint to Serve
-
-In `src/routes/serve.tsx`, add a thin strip directly under `PageHeader`:
+### 3. Define — drift strip in drawer
+When `selected.driftFlag === true`, render a thin amber strip directly under the drawer header:
 
 ```text
-Endpoint  https://mcp.clearmetric.ai/org_contoso/v1   [copy]
-API key   cm_live_••••2f8a                            [copy]
+⚠ Source changed Mar 12 · `revenue.amount` → `revenue.net_amount`   [✨ Update formula]
 ```
 
-Two rows, no card, no extra section header. The existing Pulse line ("Live · 47 calls · 4 users · 4 agents · 94ms p50") sits below — same data the Connect MCP card was showing, but now it's the only place that owns it.
+The inline `✨ Update formula` button calls the same draft action scoped to the formula field, then clears `driftFlag` on save.
 
-### Step 3 — Slim Connect → Settings
+### 4. Experiment — ✨ Generate test questions
+New button next to "Run all" in the Experiment header: `✨ Generate questions`. Click:
+- Mock-appends 3 new `TestQuestion` entries for the selected definition (realistic question + 2–3 criteria, empty baseline/CM responses)
+- Toast: "3 questions drafted — review and run"
+- Real model runs still produce baseline/CM responses (we never fabricate those)
 
-Rename route file from `src/routes/connect.tsx` to `src/routes/settings.tsx` (and delete the old). Page now has just two sections:
+## Data model changes (`src/lib/mock-data.ts`)
 
-1. **Data sources** (existing list, unchanged)
-2. **LLM keys** (existing list, unchanged)
+Add to `Definition`:
+```ts
+origin: "auto" | "manual"
+driftFlag?: boolean
+driftNote?: string   // e.g. "`revenue.amount` → `revenue.net_amount`"
+driftDate?: string
+```
 
-Remove the **MCP endpoint** section entirely — it moved to Serve.
+Seed:
+- ~70% of existing definitions → `origin: "auto"`, remainder `"manual"`
+- 2–3 definitions get `driftFlag: true` with realistic drift notes (so the amber strip is visible without hunting)
 
-Update `PageHeader` title from "Connect" to "Settings" and the meta to "Data sources · LLM keys".
+## File changes
 
-Update the sidebar Link `to` from `/connect` to `/settings`. Any other in-app links to `/connect` (none currently, but check) get redirected.
+- `src/lib/mock-data.ts` — extend `Definition` type, seed origin + drift on a few rows, add a `draftField(def, field)` helper that returns plausible mock text
+- `src/routes/define.tsx` — origin badge in drawer header, drift strip, ✨ buttons on Description and Formula labels, shimmer state during "draft"
+- `src/routes/experiment.tsx` — `✨ Generate questions` button in header, append-questions handler, toast
 
-### Step 4 — Decide on the index redirect
-
-This depends on the question below. Either keep `/` → `/define` (current) or change to `/` → `/experiment` for demo-first first impressions.
-
----
-
-## One question before I implement
-
-Should `/` redirect to **Define** (today — best for daily users) or **Experiment** (the strategy's named demo — best for first-time visitors and prospects)? Either is defensible; I'd lean **Experiment** based on the strategy doc ("the Experiment page IS the demo"), but you may have strong feelings since this changes where the app opens every time.
-
----
+No changes to Serve, Settings, sidebar, or routing.
 
 ## Technical notes
 
-- Renaming `connect.tsx` → `settings.tsx` will cause `routeTree.gen.ts` to regenerate on next dev/build — no manual edit needed there.
-- The MCP endpoint constants currently live inline in `connect.tsx`. They'll move with the endpoint UI into `serve.tsx`. No mock-data file changes.
-- Total surface area: ~3 files edited (`AppSidebar.tsx`, `serve.tsx`, new `settings.tsx`), 1 deleted (`connect.tsx`). No new dependencies, no new components, no schema changes.
+- The mock `draftField` lives in `mock-data.ts` and returns deterministic strings per (definitionId, field) so the demo is stable. When real AI lands, swap this for a `POST /api/ai/draft` server function — the call site in the component stays identical.
+- Shimmer = a `bg-gradient-to-r animate-pulse` overlay on the field for ~600ms, then state update. Keep it subtle.
+- Drift strip uses existing token `--warning` (or `--destructive` at 60% if no warning token exists — confirm in `styles.css` during build).
+- ✨ icon = `Sparkles` from lucide (already imported in Define).
+- Origin badge uses the existing `Badge` component with `variant="outline"` and a tiny lucide icon (`Zap`, `Pencil`, `AlertTriangle`).
+
+## Explicitly out of scope
+
+- Real Lovable AI wiring (one swap later; mock now keeps the loop fast)
+- Review queue / pending state / approval workflow
+- AI-generated baseline or CM responses in Experiment
+- Chat panel, command-palette AI actions
+- Backend sync endpoint, drift detection logic (assumed already exists)
+- Bulk AI actions on multiple definitions
