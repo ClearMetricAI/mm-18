@@ -46,6 +46,26 @@ function DefinePage() {
   const [draftOnly, setDraftOnly] = useState(false);
   const [groupBy, setGroupBy] = useState<GroupBy>("domain");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [drafting, setDrafting] = useState<"description" | "formula" | null>(null);
+
+  const runDraft = async (def: Definition, field: "description" | "formula") => {
+    setDrafting(field);
+    const next = await draftField(def, field);
+    setDefs((prev) =>
+      prev.map((d) =>
+        d.id === def.id
+          ? {
+              ...d,
+              [field]: next,
+              ...(field === "formula" && d.driftFlag
+                ? { driftFlag: false, driftNote: undefined, driftDate: undefined }
+                : {}),
+            }
+          : d,
+      ),
+    );
+    setDrafting(null);
+  };
 
   // ⌘K to focus search
   useEffect(() => {
