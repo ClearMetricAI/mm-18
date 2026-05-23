@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,10 +28,13 @@ import {
   Sparkles,
   Zap,
   AlertTriangle,
+  Trash2,
+  CheckCircle2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { definitions as seedDefs, draftField, type Definition } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/define")({ component: DefinePage });
 
