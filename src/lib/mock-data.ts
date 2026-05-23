@@ -679,12 +679,22 @@ export const topDefinitions: DefinitionUsage[] = topUsageNames
   })
   .filter(Boolean) as DefinitionUsage[];
 
-export const dataSources = [
+export type DataSourceKind = "Power BI" | "SQL" | "Salesforce" | "Upload" | "Manual";
+export interface DataSource {
+  id: string;
+  name: string;
+  type: DataSourceKind;
+  status: "connected" | "error" | "imported";
+  summary: string;
+  lastSync: string;
+}
+
+export const dataSources: DataSource[] = [
   {
     id: "src_pbi",
     name: "Contoso Power BI Workspace",
     type: "Power BI",
-    status: "connected" as const,
+    status: "connected",
     summary: "47 measures across 12 datasets",
     lastSync: "2 hours ago",
   },
@@ -692,7 +702,7 @@ export const dataSources = [
     id: "src_snow",
     name: "Snowflake — Analytics",
     type: "SQL",
-    status: "connected" as const,
+    status: "connected",
     summary: "138 tables, 12 marts",
     lastSync: "yesterday",
   },
@@ -700,9 +710,17 @@ export const dataSources = [
     id: "src_sfdc",
     name: "Salesforce Production",
     type: "Salesforce",
-    status: "error" as const,
+    status: "error",
     summary: "Auth token expired",
     lastSync: "5 days ago",
+  },
+  {
+    id: "src_upload_xlsx",
+    name: "metrics-definitions.xlsx",
+    type: "Upload",
+    status: "imported",
+    summary: "23 definitions extracted",
+    lastSync: "Imported May 18",
   },
 ];
 
