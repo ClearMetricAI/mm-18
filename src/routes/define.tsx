@@ -31,7 +31,7 @@ type Tab = "inbox" | "library";
 
 function DefinePage() {
   const { view: viewId } = Route.useSearch();
-  const { views } = useViews();
+  const { views, upsert: upsertView } = useViews();
   const navigate = useNavigate();
   const activeView = views.find((v) => v.id === viewId) ?? null;
 
