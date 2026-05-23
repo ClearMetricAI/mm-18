@@ -40,6 +40,8 @@ export function AppSidebar() {
     view?: string;
   };
   const navigate = useNavigate();
+  const { role } = useBilling();
+  const showBilling = canSeeBilling(role);
   const { theme, toggle } = useTheme();
   const { views, upsert, remove } = useViews();
 
