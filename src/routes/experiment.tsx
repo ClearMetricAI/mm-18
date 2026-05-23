@@ -227,6 +227,32 @@ function ExperimentPage() {
                   criterion. Reasoning is shown next to every check.
                 </TooltipContent>
               </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setShowBaseline((v) => !v)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] transition-colors",
+                      baselineCustom
+                        ? "border-primary/40 bg-primary/5 text-foreground"
+                        : "border-border text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <SlidersHorizontal className="h-3 w-3" />
+                    Baseline:
+                    <span className={cn("font-medium", baselineCustom ? "text-primary" : "text-foreground")}>
+                      {baselineCustom ? "custom" : "default"}
+                    </span>
+                    {baselineCustom && files.length > 0 && (
+                      <span className="text-muted-foreground">· {files.length} file{files.length > 1 ? "s" : ""}</span>
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[280px] text-xs">
+                  What your agent already knows before ClearMetric. Add your system prompt, schemas,
+                  or docs to make the comparison match production.
+                </TooltipContent>
+              </Tooltip>
               <Select value={model} onValueChange={setModel}>
                 <SelectTrigger className="h-7 w-[150px] text-xs">
                   <SelectValue />
