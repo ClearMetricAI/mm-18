@@ -111,6 +111,7 @@ function RootComponent() {
           <main className="flex-1 min-w-0 overflow-hidden">
             <Outlet />
           </main>
+          <CommandPalette />
         </div>
       </ThemeProvider>
     </QueryClientProvider>
