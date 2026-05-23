@@ -11,6 +11,7 @@ import {
   Plus,
   Filter,
   MoreHorizontal,
+  Inbox,
 } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/lib/theme";
@@ -20,6 +21,7 @@ import { ViewEditor } from "@/components/view-editor";
 import { CreditMeter } from "@/components/CreditMeter";
 import { definitions } from "@/lib/mock-data";
 import { useBilling, canSeeBilling } from "@/lib/billing-mock";
+import { useInbox } from "@/lib/inbox-store";
 import type { View } from "@/lib/views";
 import {
   DropdownMenu,
@@ -29,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const nav = [
+  { to: "/", label: "Inbox", icon: Inbox },
   { to: "/define", label: "Define", icon: BookOpen },
   { to: "/experiment", label: "Experiment", icon: FlaskConical },
   { to: "/serve", label: "Serve", icon: Radio },
