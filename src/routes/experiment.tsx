@@ -239,18 +239,22 @@ function ExperimentPage() {
                     )}
                   >
                     <SlidersHorizontal className="h-3 w-3" />
-                    Baseline:
-                    <span className={cn("font-medium", baselineCustom ? "text-primary" : "text-foreground")}>
-                      {baselineCustom ? "custom" : "default"}
-                    </span>
-                    {baselineCustom && files.length > 0 && (
-                      <span className="text-muted-foreground">· {files.length} file{files.length > 1 ? "s" : ""}</span>
+                    {baselineCustom ? (
+                      <>
+                        Baseline:
+                        <span className="font-medium text-primary">custom</span>
+                        {files.length > 0 && (
+                          <span className="text-muted-foreground">· {files.length} file{files.length > 1 ? "s" : ""}</span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="font-medium text-foreground">+ Customize baseline</span>
                     )}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[280px] text-xs">
-                  What your agent already knows before ClearMetric. Add your system prompt, schemas,
-                  or docs to make the comparison match production.
+                  By default the model answers cold — no system prompt, no context. Paste your
+                  agent's real prompt, schemas, or docs to mirror production.
                 </TooltipContent>
               </Tooltip>
               <Select value={model} onValueChange={setModel}>
