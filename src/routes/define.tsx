@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Search, ChevronDown, Check, AlertTriangle, Sparkles } from "lucide-react";
+import { Plus, Search, ChevronDown, AlertTriangle, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { definitions as seedDefs, activityLog, type Definition } from "@/lib/mock-data";
+import { definitions as seedDefs, type Definition } from "@/lib/mock-data";
 import { ReviewCard } from "@/components/review-card";
 import {
   suggestDefinitionDrafts,
@@ -30,7 +30,6 @@ function DefinePage() {
   const [tab, setTab] = useState<Tab>("inbox");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
-  const [showUsage, setShowUsage] = useState(false);
 
   const dismiss = (id: string) =>
     setSuggestions((prev) => prev.filter((s) => s.id !== id));
@@ -46,31 +45,6 @@ function DefinePage() {
         !q || d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q),
     );
   }, [defs, query]);
-
-  // Serve stats — derived inline so /serve can go away.
-  const usage = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const a of activityLog) {
-      if (!a.definitionName) continue;
-      counts.set(a.definitionName, (counts.get(a.definitionName) ?? 0) + 1);
-    }
-    const total = activityLog.length;
-    const matched = activityLog.filter((a) => a.definitionName).length;
-    const pct = total ? Math.round((matched / total) * 100) : 0;
-    const top = Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-    return { total, pct, top };
-  }, []);
-
-  const usageByName = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const a of activityLog) {
-      if (!a.definitionName) continue;
-      m.set(a.definitionName, (m.get(a.definitionName) ?? 0) + 1);
-    }
-    return m;
-  }, []);
 
   const toggleServe = (id: string) =>
     setDefs((prev) => prev.map((d) => (d.id === id ? { ...d, serveToAi: !d.serveToAi } : d)));
@@ -101,60 +75,9 @@ function DefinePage() {
 
   return (
     <div className="mx-auto flex h-screen max-w-3xl flex-col">
-      {/* ROI banner — collapses /serve into one sentence */}
-      <button
-        onClick={() => setShowUsage((v) => !v)}
-        className="mx-6 mt-6 flex items-center gap-2.5 rounded-md border border-border bg-muted/30 px-3 py-2 text-left text-xs transition-colors hover:bg-muted/50"
-      >
-        <span className="relative flex h-1.5 w-1.5 shrink-0">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--success)] opacity-60" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
-        </span>
-        <span className="flex-1 text-foreground">
-          <span className="font-medium">{usage.pct}%</span>{" "}
-          <span className="text-muted-foreground">
-            of {usage.total} AI questions this week answered from canon
-          </span>
-        </span>
-        <ChevronDown
-          className={cn(
-            "h-3.5 w-3.5 text-muted-foreground transition-transform",
-            !showUsage && "-rotate-90",
-          )}
-        />
-      </button>
-
-      {showUsage && (
-        <div className="mx-6 mt-1 rounded-md border border-border bg-card px-3 py-2.5">
-          <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Most asked
-          </div>
-          <ul className="space-y-1.5">
-            {usage.top.map(([name, count]) => {
-              const max = usage.top[0]?.[1] ?? 1;
-              return (
-                <li key={name} className="flex items-center gap-3 text-xs">
-                  <span className="w-40 shrink-0 truncate">{name}</span>
-                  <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full bg-primary/70"
-                      style={{ width: `${(count / max) * 100}%` }}
-                    />
-                  </div>
-                  <span className="w-6 shrink-0 text-right font-mono tabular-nums text-muted-foreground">
-                    {count}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-
-      {/* Header + tabs */}
-      <header className="px-6 pb-2 pt-6">
+      <header className="px-6 pb-2 pt-8">
         <h1 className="text-xl font-semibold">Definitions</h1>
-        <div className="mt-3 flex items-center gap-1 border-b border-border">
+        <div className="mt-4 flex items-center gap-1 border-b border-border">
           <TabBtn active={tab === "inbox"} onClick={() => setTab("inbox")}>
             Inbox
             {suggestions.length > 0 && (
@@ -177,7 +100,7 @@ function DefinePage() {
               <SectionGroup
                 icon={<AlertTriangle className="h-3 w-3" />}
                 tone="warn"
-                label="Drift — definitions you blessed may have broken"
+                label="Drift"
               >
                 {drifts.map((s) =>
                   s.kind === "drift" ? (
@@ -215,7 +138,7 @@ function DefinePage() {
               <SectionGroup
                 icon={<Sparkles className="h-3 w-3" />}
                 tone="brand"
-                label="New drafts — bless them so the AI can use them"
+                label="New drafts"
               >
                 {drafts.map((s) =>
                   s.kind === "definition" ? (
@@ -247,7 +170,7 @@ function DefinePage() {
               <SectionGroup
                 icon={<Sparkles className="h-3 w-3" />}
                 tone="brand"
-                label="Improvements — small edits the engine recommends"
+                label="Improvements"
               >
                 {improvements.map((s) =>
                   s.kind === "improvement" ? (
@@ -277,7 +200,7 @@ function DefinePage() {
 
             {suggestions.length === 0 && (
               <div className="rounded-md border border-dashed border-border py-12 text-center text-xs text-muted-foreground">
-                Inbox zero. The engine will surface new drafts and drift here as sources change.
+                Inbox zero.
               </div>
             )}
           </div>
@@ -307,7 +230,6 @@ function DefinePage() {
             <ul className="divide-y divide-border rounded-md border border-border">
               {approved.map((d) => {
                 const open = openId === d.id;
-                const calls = usageByName.get(d.name) ?? 0;
                 return (
                   <li key={d.id}>
                     <div
@@ -328,18 +250,7 @@ function DefinePage() {
                           !open && "-rotate-90",
                         )}
                       />
-                      <span className="truncate text-sm font-medium">{d.name}</span>
-                      {d.status === "tested" ? (
-                        <span
-                          className="inline-flex shrink-0 items-center gap-0.5 text-[10px] text-[var(--success)]"
-                          title="Verified by test questions"
-                        >
-                          <Check className="h-3 w-3" />
-                          verified
-                        </span>
-                      ) : (
-                        <span className="shrink-0 text-[10px] text-muted-foreground">untested</span>
-                      )}
+                      <span className="truncate text-sm">{d.name}</span>
                       {d.driftFlag && (
                         <span
                           className="inline-flex shrink-0 items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400"
@@ -349,12 +260,7 @@ function DefinePage() {
                           drift
                         </span>
                       )}
-                      <span className="ml-auto flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                        {calls > 0 && (
-                          <span className="text-[10px] text-muted-foreground">
-                            {calls} call{calls === 1 ? "" : "s"}
-                          </span>
-                        )}
+                      <span className="ml-auto" onClick={(e) => e.stopPropagation()}>
                         <Switch
                           checked={d.serveToAi}
                           onCheckedChange={() => toggleServe(d.id)}
@@ -387,10 +293,7 @@ function DefinePage() {
                             className="font-mono text-xs"
                           />
                         </Field>
-                        <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
-                          <span>
-                            {d.owner} · {d.source}
-                          </span>
+                        <div className="flex justify-end pt-1">
                           <Button
                             size="sm"
                             variant="ghost"
