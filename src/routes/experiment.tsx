@@ -276,56 +276,26 @@ function ExperimentPage() {
           )}
 
           <div className="flex-1 overflow-y-auto">
-            {/* ROI headline */}
+            {/* ROI headline — one line, one number */}
             <div className="px-6 py-5">
-              <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
-                <div className="text-base font-semibold text-foreground">
-                  {scores.questions === 0 ? (
-                    "No tests yet"
-                  ) : (
-                    <>
-                      Grounding changed the answer on{" "}
-                      <span className="text-primary">
-                        {scores.changed} of {scores.questions}
-                      </span>{" "}
-                      questions{" "}
-                      <span className="text-muted-foreground font-normal">({changedPct}%)</span>
-                    </>
-                  )}
-                </div>
-                <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>
-                    Ungrounded{" "}
-                    <span className="font-mono tabular-nums text-foreground">
-                      {scores.baseline}/{scores.total}
-                    </span>{" "}
-                    passed
+              {scores.questions === 0 ? (
+                <div className="text-sm text-muted-foreground">No tests yet.</div>
+              ) : (
+                <div className="flex items-baseline gap-3">
+                  <span className="font-mono text-2xl font-semibold tabular-nums text-foreground">
+                    {scores.baseline}/{scores.total}
                   </span>
                   <span className="text-muted-foreground/60">→</span>
-                  <span>
-                    Grounded{" "}
-                    <span className="font-mono tabular-nums text-foreground">
-                      {scores.cm}/{scores.total}
-                    </span>{" "}
-                    passed
+                  <span className="font-mono text-2xl font-semibold tabular-nums text-[var(--success)]">
+                    {scores.cm}/{scores.total}
                   </span>
-                  <span className="text-muted-foreground/60">·</span>
-                  <span
-                    className={cn(
-                      "font-mono tabular-nums",
-                      improvement > 0
-                        ? "text-[var(--success)]"
-                        : improvement < 0
-                        ? "text-destructive"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {improvement > 0 ? "+" : ""}
-                    {scores.total === 0 ? "—" : `${improvement}%`}
+                  <span className="ml-1 text-sm text-muted-foreground">
+                    criteria passed with grounding
                   </span>
                 </div>
-              </div>
+              )}
             </div>
+
 
 
             <div className="px-6">
