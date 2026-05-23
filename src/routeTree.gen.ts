@@ -9,12 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ServeRouteImport } from './routes/serve'
 import { Route as ExperimentRouteImport } from './routes/experiment'
 import { Route as DefineRouteImport } from './routes/define'
-import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServeRoute = ServeRouteImport.update({
   id: '/serve',
   path: '/serve',
@@ -30,11 +35,6 @@ const DefineRoute = DefineRouteImport.update({
   path: '/define',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ConnectRoute = ConnectRouteImport.update({
-  id: '/connect',
-  path: '/connect',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,44 +43,51 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/connect': typeof ConnectRoute
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
   '/serve': typeof ServeRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/connect': typeof ConnectRoute
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
   '/serve': typeof ServeRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/connect': typeof ConnectRoute
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
   '/serve': typeof ServeRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/connect' | '/define' | '/experiment' | '/serve'
+  fullPaths: '/' | '/define' | '/experiment' | '/serve' | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/connect' | '/define' | '/experiment' | '/serve'
-  id: '__root__' | '/' | '/connect' | '/define' | '/experiment' | '/serve'
+  to: '/' | '/define' | '/experiment' | '/serve' | '/settings'
+  id: '__root__' | '/' | '/define' | '/experiment' | '/serve' | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ConnectRoute: typeof ConnectRoute
   DefineRoute: typeof DefineRoute
   ExperimentRoute: typeof ExperimentRoute
   ServeRoute: typeof ServeRoute
+  SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/serve': {
       id: '/serve'
       path: '/serve'
@@ -102,13 +109,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DefineRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/connect': {
-      id: '/connect'
-      path: '/connect'
-      fullPath: '/connect'
-      preLoaderRoute: typeof ConnectRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -121,11 +121,21 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ConnectRoute: ConnectRoute,
   DefineRoute: DefineRoute,
   ExperimentRoute: ExperimentRoute,
   ServeRoute: ServeRoute,
+  SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

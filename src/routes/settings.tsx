@@ -2,11 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, RefreshCw, Copy, Check } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { dataSources, llmKeys } from "@/lib/mock-data";
-import { useState } from "react";
 
-export const Route = createFileRoute("/connect")({ component: ConnectPage });
+export const Route = createFileRoute("/settings")({ component: SettingsPage });
 
 function StatusDot({ ok }: { ok: boolean }) {
   return (
@@ -28,20 +27,10 @@ function Section({ title, action, children }: { title: string; action?: React.Re
   );
 }
 
-function ConnectPage() {
-  const [copied, setCopied] = useState<string | null>(null);
-  const endpoint = "https://mcp.clearmetric.ai/org_contoso/v1";
-  const apiKey = "cm_live_••••••••••••••••2f8a";
-
-  const copy = (key: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 1500);
-  };
-
+function SettingsPage() {
   return (
     <div className="h-full overflow-y-auto">
-      <PageHeader title="Connect" meta="Data sources · LLM keys · MCP endpoint" />
+      <PageHeader title="Settings" meta="Data sources · LLM keys" />
 
       <Section
         title="Data sources"
@@ -102,46 +91,6 @@ function ConnectPage() {
           ))}
         </div>
       </Section>
-
-      <Section title="MCP endpoint">
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="flex items-center gap-2">
-            <StatusDot ok />
-            <span className="text-sm font-medium">Active</span>
-            <span className="ml-auto text-xs text-muted-foreground">
-              312 calls this week · 18 definitions served
-            </span>
-          </div>
-
-          <div className="mt-4 grid gap-3">
-            <FieldCopy label="Endpoint URL" value={endpoint} copied={copied === "url"} onCopy={() => copy("url", endpoint)} />
-            <FieldCopy label="API key" value={apiKey} copied={copied === "key"} onCopy={() => copy("key", "cm_live_full_key_redacted")} />
-          </div>
-
-          <p className="mt-4 text-xs text-muted-foreground">
-            Configure your AI assistant (Copilot Studio, Claude, Cursor) to use this MCP endpoint. Definitions you toggle
-            <span className="font-medium text-foreground"> Serve to AI </span>
-            will be available immediately.
-          </p>
-        </div>
-      </Section>
-    </div>
-  );
-}
-
-function FieldCopy({ label, value, copied, onCopy }: { label: string; value: string; copied: boolean; onCopy: () => void }) {
-  return (
-    <div>
-      <div className="mb-1 text-xs text-muted-foreground">{label}</div>
-      <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 font-mono text-xs">
-        <span className="flex-1 truncate">{value}</span>
-        <button
-          onClick={onCopy}
-          className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          {copied ? <Check className="h-3.5 w-3.5 text-[var(--success)]" /> : <Copy className="h-3.5 w-3.5" />}
-        </button>
-      </div>
     </div>
   );
 }
