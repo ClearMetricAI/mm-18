@@ -535,7 +535,9 @@ function ExperimentPage() {
 
                               <div className="grid gap-3 md:grid-cols-2">
                                 <ResponsePanel
-                                  label="Without ClearMetric"
+                                  label="Ungrounded"
+                                  sublabel="LLM alone"
+                                  tooltip="The model answers from training data only. No company context."
                                   tone="bad"
                                   text={q.baselineResponse}
                                   passed={q.baselinePass}
@@ -543,7 +545,9 @@ function ExperimentPage() {
                                   criteria={q.criteria}
                                 />
                                 <ResponsePanel
-                                  label="With ClearMetric"
+                                  label="Grounded"
+                                  sublabel="LLM + your definitions"
+                                  tooltip="The model answers using your approved ClearMetric definitions as context."
                                   tone="good"
                                   text={q.cmResponse}
                                   passed={q.cmPass}
@@ -551,6 +555,7 @@ function ExperimentPage() {
                                   criteria={q.criteria}
                                 />
                               </div>
+
                             </>
                           )}
                         </div>
