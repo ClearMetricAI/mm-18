@@ -25,9 +25,11 @@ import {
   Layers,
   X,
   Sparkles,
+  Zap,
+  AlertTriangle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { definitions as seedDefs, type Definition } from "@/lib/mock-data";
+import { definitions as seedDefs, draftField, type Definition } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/define")({ component: DefinePage });
@@ -44,6 +46,26 @@ function DefinePage() {
   const [draftOnly, setDraftOnly] = useState(false);
   const [groupBy, setGroupBy] = useState<GroupBy>("domain");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [drafting, setDrafting] = useState<"description" | "formula" | null>(null);
+
+  const runDraft = async (def: Definition, field: "description" | "formula") => {
+    setDrafting(field);
+    const next = await draftField(def, field);
+    setDefs((prev) =>
+      prev.map((d) =>
+        d.id === def.id
+          ? {
+              ...d,
+              [field]: next,
+              ...(field === "formula" && d.driftFlag
+                ? { driftFlag: false, driftNote: undefined, driftDate: undefined }
+                : {}),
+            }
+          : d,
+      ),
+    );
+    setDrafting(null);
+  };
 
   // ⌘K to focus search
   useEffect(() => {
@@ -279,6 +301,7 @@ function DefinePage() {
                 <Badge variant="secondary" className="text-[10px] font-normal">
                   {selected.domain}
                 </Badge>
+                <OriginBadge def={selected} />
               </div>
               <button
                 className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -288,16 +311,60 @@ function DefinePage() {
               </button>
             </div>
 
+            {selected.driftFlag && (
+              <div className="flex items-start gap-2 border-b border-[var(--warning)]/40 bg-[var(--warning)]/10 px-5 py-2.5 text-xs">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--warning-foreground)]" />
+                <div className="min-w-0 flex-1 leading-relaxed text-[var(--warning-foreground)]">
+                  <span className="font-medium">Source changed {selected.driftDate}</span>
+                  {selected.driftNote && (
+                    <span className="ml-1 opacity-90">· {selected.driftNote}</span>
+                  )}
+                </div>
+                <button
+                  className="shrink-0 rounded border border-[var(--warning)]/50 bg-background/60 px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-background disabled:opacity-50"
+                  onClick={() => runDraft(selected, "formula")}
+                  disabled={drafting !== null}
+                >
+                  <Sparkles className="mr-1 inline h-3 w-3" />
+                  Update formula
+                </button>
+              </div>
+            )}
+
             <div className="space-y-5 px-5 py-4">
-              <Field label="Description">
-                <p className="text-sm leading-relaxed">{selected.description}</p>
+              <Field
+                label="Description"
+                action={
+                  <DraftButton
+                    busy={drafting === "description"}
+                    onClick={() => runDraft(selected, "description")}
+                  />
+                }
+              >
+                <div className={cn("relative", drafting === "description" && "animate-pulse")}>
+                  <p className="text-sm leading-relaxed">{selected.description}</p>
+                </div>
               </Field>
 
-              <Field label="Formula">
-                <pre className="overflow-x-auto rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs">
+              <Field
+                label="Formula"
+                action={
+                  <DraftButton
+                    busy={drafting === "formula"}
+                    onClick={() => runDraft(selected, "formula")}
+                  />
+                }
+              >
+                <pre
+                  className={cn(
+                    "overflow-x-auto rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs whitespace-pre-wrap",
+                    drafting === "formula" && "animate-pulse",
+                  )}
+                >
                   {selected.formula}
                 </pre>
               </Field>
+
 
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Owner">
@@ -359,14 +426,68 @@ function DefinePage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  action,
+  children,
+}: {
+  label: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mb-1 flex items-center justify-between">
+        <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          {label}
+        </div>
+        {action}
+      </div>
       {children}
     </div>
   );
 }
+
+function DraftButton({ busy, onClick }: { busy: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={busy}
+      className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-60"
+      title="Draft with AI"
+    >
+      <Sparkles className={cn("h-3 w-3", busy && "animate-spin")} />
+      {busy ? "Drafting…" : "Draft with AI"}
+    </button>
+  );
+}
+
+function OriginBadge({ def }: { def: Definition }) {
+  if (def.driftFlag) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded border border-[var(--warning)]/40 bg-[var(--warning)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--warning-foreground)]">
+        <AlertTriangle className="h-2.5 w-2.5" />
+        Drifted
+      </span>
+    );
+  }
+  if (def.origin === "manual") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
+        <Pencil className="h-2.5 w-2.5" />
+        Manual
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
+      <Zap className="h-2.5 w-2.5" />
+      Auto
+    </span>
+  );
+}
+
+
 
 function FilterMenu({
   icon,
