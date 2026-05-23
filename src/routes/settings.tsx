@@ -76,8 +76,9 @@ function SettingsPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <PageHeader title="Settings" meta="Billing · Data sources · MCP endpoint · LLM keys" />
+      <PageHeader title="Settings" meta="Workspace · Billing · Data sources · MCP endpoint · LLM keys" />
 
+      <WorkspaceSection />
       <BillingSection />
 
       <Section
