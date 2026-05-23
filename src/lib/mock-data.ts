@@ -477,7 +477,7 @@ export interface ActivityEntry {
 }
 
 // Deterministic: derived from a fixed reference timestamp so SSR & client match.
-const REF_TS = Date.parse("2025-05-23T14:00:00Z");
+export const REF_TS = Date.parse("2025-05-23T14:00:00Z");
 const agents = ["Copilot Studio", "Claude MCP", "Custom Agent", "Cursor"];
 const tools: ActivityEntry["tool"][] = ["search_definitions", "get_definition", "get_lineage", "get_impact"];
 const inputs = ["what is revenue", "churn definition", "MRR calculation", "active customer", "CAC formula"];
@@ -496,6 +496,46 @@ export const activityLog: ActivityEntry[] = Array.from({ length: 42 }, (_, i) =>
     latencyMs: latencies[i % latencies.length],
   };
 });
+
+// Coverage gaps — queries AI agents asked but no served definition matched.
+// This is the highest-value insight on the Serve page: what to define next.
+export interface UnmatchedQuery {
+  id: string;
+  query: string;
+  count: number;
+  lastAskedMinutesAgo: number;
+  agents: string[];
+  suggestedName: string;
+  suggestedDomain: string;
+}
+
+export const unmatchedQueries: UnmatchedQuery[] = [
+  { id: "u1", query: "what counts as a power user", count: 7, lastAskedMinutesAgo: 12, agents: ["Copilot Studio", "Claude MCP"], suggestedName: "Power User", suggestedDomain: "Product" },
+  { id: "u2", query: "rule of 40 for this quarter", count: 5, lastAskedMinutesAgo: 41, agents: ["Claude MCP"], suggestedName: "Rule of 40", suggestedDomain: "Finance" },
+  { id: "u3", query: "trial to paid conversion rate", count: 4, lastAskedMinutesAgo: 88, agents: ["Cursor", "Copilot Studio"], suggestedName: "Trial Conversion", suggestedDomain: "Growth" },
+  { id: "u4", query: "what is our magic number", count: 3, lastAskedMinutesAgo: 134, agents: ["Claude MCP"], suggestedName: "Magic Number", suggestedDomain: "Finance" },
+  { id: "u5", query: "support ticket sla", count: 3, lastAskedMinutesAgo: 210, agents: ["Custom Agent"], suggestedName: "Support SLA", suggestedDomain: "Customer Success" },
+  { id: "u6", query: "burn multiple", count: 2, lastAskedMinutesAgo: 320, agents: ["Claude MCP"], suggestedName: "Burn Multiple", suggestedDomain: "Finance" },
+  { id: "u7", query: "qbr revenue formula", count: 2, lastAskedMinutesAgo: 412, agents: ["Copilot Studio"], suggestedName: "QBR Revenue", suggestedDomain: "Finance" },
+  { id: "u8", query: "feature stickiness for AI suite", count: 1, lastAskedMinutesAgo: 540, agents: ["Cursor"], suggestedName: "Feature Stickiness", suggestedDomain: "Product" },
+];
+
+// Most-asked definitions this week — derived counts (deterministic mock).
+export interface DefinitionUsage {
+  definitionId: string;
+  definitionName: string;
+  count: number;
+}
+
+const topUsageNames = ["Net Revenue", "Logo Churn", "MRR", "ARR", "CAC", "MAU", "Net Revenue Retention", "Qualified Pipeline"];
+export const topDefinitions: DefinitionUsage[] = topUsageNames
+  .map((name, i) => {
+    const def = definitions.find((d) => d.name === name);
+    return def
+      ? { definitionId: def.id, definitionName: def.name, count: [38, 27, 22, 16, 14, 11, 9, 6][i] }
+      : null;
+  })
+  .filter(Boolean) as DefinitionUsage[];
 
 export const dataSources = [
   {
