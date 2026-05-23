@@ -40,17 +40,22 @@ import {
   Gavel,
 } from "lucide-react";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   definitions,
   testQuestions as seedQuestions,
   availableModels,
   judgeModel,
-  draftTestQuestions,
   type TestQuestion,
 } from "@/lib/mock-data";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ReviewCard, ReviewStrip } from "@/components/review-card";
+import {
+  suggestTestQuestions,
+  suggestionToTestQuestion,
+  type TestQuestionSuggestion,
+} from "@/lib/engine";
 
 export const Route = createFileRoute("/experiment")({
   validateSearch: (s: Record<string, unknown>) => ({ def: (s.def as string) ?? "def_net_revenue" }),
