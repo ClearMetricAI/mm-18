@@ -333,89 +333,32 @@ function ExperimentPage() {
             </div>
           )}
 
-          {/* Collapsible baseline setup */}
-          {showBaseline && (
-            <div className="border-b border-border bg-muted/20 px-6 py-4">
-              <div className="mb-3 flex items-baseline justify-between">
-                <div>
-                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Baseline setup
-                  </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {baselineCustom
-                      ? "Your custom baseline is active. Both runs use it; only the ClearMetric run also gets the definition."
-                      : "Default = cold model, nothing attached. Add your agent's real prompt and context below so the comparison reflects production."}
-                  </p>
-                </div>
-                {baselineCustom && (
-                  <button
-                    onClick={() => { setSysPrompt(""); setExtraContext(""); setFiles([]); }}
-                    className="text-[11px] text-muted-foreground hover:text-foreground"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    System prompt
-                  </label>
-                  <Textarea
-                    value={sysPrompt}
-                    onChange={(e) => setSysPrompt(e.target.value)}
-                    placeholder="You are a data analyst at Contoso. Answer using our finance conventions…"
-                    className="min-h-[96px] resize-y font-mono text-[11px] leading-relaxed"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Extra context
-                    <span className="ml-1 normal-case tracking-normal text-muted-foreground/70">(schemas, dbt docs, RAG snippets)</span>
-                  </label>
-                  <Textarea
-                    value={extraContext}
-                    onChange={(e) => setExtraContext(e.target.value)}
-                    placeholder="Paste table schemas, glossary, or anything your agent normally has access to."
-                    className="min-h-[96px] resize-y font-mono text-[11px] leading-relaxed"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-border bg-background px-2.5 py-1 text-[11px] text-muted-foreground hover:text-foreground">
-                  <Paperclip className="h-3 w-3" />
-                  Attach files
-                  <input
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => {
-                      const list = Array.from(e.target.files ?? []).map((f) => ({ name: f.name, size: f.size }));
-                      setFiles((prev) => [...prev, ...list]);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-                {files.map((f, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-[11px] text-foreground/80 ring-1 ring-border">
-                    <span className="truncate max-w-[160px]">{f.name}</span>
-                    <span className="text-muted-foreground">{Math.max(1, Math.round(f.size / 1024))}kb</span>
-                    <button
-                      onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-                <span className="ml-auto text-[10px] text-muted-foreground">
-                  Applied to every test run · not stored
-                </span>
-              </div>
+          {/* Baseline tab strip — only when comparing more than one */}
+          {activeBaselines.length > 1 && (
+            <div className="flex items-center gap-1 border-b border-border bg-muted/20 px-6 py-2">
+              <span className="mr-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Viewing
+              </span>
+              {activeBaselines.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => setViewBaselineId(b.id)}
+                  className={cn(
+                    "rounded-md px-2 py-1 text-[11px] transition-colors",
+                    effectiveViewId === b.id
+                      ? "bg-background text-foreground ring-1 ring-border"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {b.name}
+                </button>
+              ))}
+              <span className="ml-auto text-[10px] text-muted-foreground">
+                vs ClearMetric · <Link to="/baselines" className="hover:text-foreground hover:underline">edit</Link>
+              </span>
             </div>
           )}
+
 
           <div className="flex-1 overflow-y-auto">
             {/* ROI headline — one line, one number */}
