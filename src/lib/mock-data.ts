@@ -291,7 +291,88 @@ const filler: Definition[] = fillerNames.map((name, i) => {
   };
 });
 
-export const definitions: Definition[] = [...base, ...filler];
+const rawDefs: Definition[] = [...base, ...filler];
+
+// Inject origin (manual if source is "Manual", else auto) and seed drift on a few.
+const driftSeed: Record<string, { note: string; date: string }> = {
+  def_mrr: {
+    note: "`subscriptions.mrr` → `subscriptions.mrr_normalized`",
+    date: "May 18",
+  },
+  def_mau: {
+    note: "`events.user_id` filter `is_internal` was renamed to `is_employee`",
+    date: "May 14",
+  },
+  def_pipeline: {
+    note: "Stage threshold changed in Salesforce: Stage 2 is now `Qualified`, not `Discovery`",
+    date: "May 9",
+  },
+};
+
+export const definitions: Definition[] = rawDefs.map((d) => ({
+  ...d,
+  origin: d.source === "Manual" ? "manual" : "auto",
+  ...(driftSeed[d.id]
+    ? { driftFlag: true, driftNote: driftSeed[d.id].note, driftDate: driftSeed[d.id].date }
+    : {}),
+}));
+
+// Mock AI draft — deterministic per (definitionId, field) so the demo is stable.
+// Swap this for a real `POST /api/ai/draft` server call later; call site stays identical.
+export async function draftField(
+  def: Definition,
+  field: "description" | "formula",
+): Promise<string> {
+  await new Promise((r) => setTimeout(r, 650));
+  if (field === "description") {
+    return `${def.name} — ${def.domain.toLowerCase()} metric sourced from ${def.source}. ${
+      def.driftFlag
+        ? `Updated after source change on ${def.driftDate}: ${def.driftNote}. `
+        : ""
+    }Owned by ${def.owner}. Excludes internal/test records and is normalized to the reporting period. Used in ${
+      def.usedIn[0] ?? "internal reports"
+    }.`;
+  }
+  // formula
+  const slug = def.name.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  if (def.driftFlag && def.driftNote) {
+    const updated = def.driftNote.split("→").pop()?.trim().replace(/`/g, "") ?? slug;
+    return `-- updated for: ${def.driftNote}\nSELECT ${updated}\nFROM ${def.source.toLowerCase().replace(/\s+\/\s+/g, ".")}\nWHERE period = :period AND is_internal = false`;
+  }
+  return `SELECT ${slug}\nFROM ${def.source.toLowerCase().replace(/\s+\/\s+/g, ".")}\nWHERE period = :period AND is_internal = false`;
+}
+
+// AI-drafted test question templates per definition (deterministic, scoped to the def's name/domain).
+export function draftTestQuestions(def: Definition): TestQuestion[] {
+  const stamp = Date.now();
+  const mk = (i: number, question: string, criteria: string[]): TestQuestion => ({
+    id: `q_ai_${stamp}_${i}`,
+    definitionId: def.id,
+    question,
+    criteria,
+    baselineResponse: "(not run yet)",
+    cmResponse: "(not run yet)",
+    baselinePass: criteria.map(() => false),
+    cmPass: criteria.map(() => false),
+    baselineReasons: criteria.map(() => "(not graded yet)"),
+    cmReasons: criteria.map(() => "(not graded yet)"),
+  });
+  return [
+    mk(0, `How is ${def.name} calculated?`, [
+      `References the ${def.domain} source`,
+      "Matches the documented formula",
+      "Excludes internal/test records",
+    ]),
+    mk(1, `What is excluded from ${def.name}?`, [
+      "Lists at least one exclusion",
+      "Does not invent exclusions not in the definition",
+    ]),
+    mk(2, `Is ${def.name} the same as the industry-standard version?`, [
+      "Acknowledges the company-specific definition",
+      "Notes any deviation from the generic version",
+    ]),
+  ];
+}
 
 export interface TestQuestion {
   id: string;
