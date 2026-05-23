@@ -179,8 +179,48 @@ function SettingsPage() {
   );
 }
 
+function WorkspaceSection() {
+  const { role } = useBilling();
+  return (
+    <Section title="Workspace">
+      <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
+        Your role controls what you can see and do. Billing, plans, and credit
+        usage are only visible to Owners and Admins.
+      </p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {ROLES.map((r) => {
+          const active = role === r.id;
+          return (
+            <button
+              key={r.id}
+              onClick={() => setRole(r.id as Role)}
+              className={cn(
+                "rounded-lg border px-4 py-3 text-left transition-colors",
+                active
+                  ? "border-foreground bg-accent"
+                  : "border-border bg-card hover:border-foreground/40",
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">{r.name}</span>
+                {active && (
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Current
+                  </span>
+                )}
+              </div>
+              <div className="mt-0.5 text-xs text-muted-foreground">{r.blurb}</div>
+            </button>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
 function BillingSection() {
-  const { plan, used, total, scenario } = useBilling();
+  const { plan, used, total, scenario, role } = useBilling();
+  if (!canSeeBilling(role)) return null;
   const pct = Math.min(100, (used / total) * 100);
   const tone =
     pct >= 100 ? "bg-destructive" : pct >= 80 ? "bg-amber-500" : "bg-foreground/70";
