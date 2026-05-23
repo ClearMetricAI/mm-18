@@ -89,7 +89,7 @@ export function AppSidebar() {
             <Link key={to} to={to} className={linkCls(active)}>
               <Icon className="h-4 w-4" />
               <span className="flex-1">{label}</span>
-              {to === "/" && openCount > 0 && (
+              {to === "/" && mounted && openCount > 0 && (
                 <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                   {openCount}
                 </span>
