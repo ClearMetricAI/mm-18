@@ -215,6 +215,82 @@ function DefinePage() {
         </div>
       </div>
 
+      {/* Engine suggestion strip */}
+      <ReviewStrip count={suggestions.length}>
+        {suggestions.map((s) => {
+          if (s.kind === "definition") {
+            return (
+              <ReviewCard
+                key={s.id}
+                kind={s.kind}
+                title={s.title}
+                rationale={s.rationale}
+                onAccept={() => {
+                  setDefs((prev) => [s.draft, ...prev]);
+                  dismissSuggestion(s.id);
+                  toast.success(`${s.draft.name} added as draft`);
+                }}
+                onDismiss={() => dismissSuggestion(s.id)}
+              >
+                <span className="text-muted-foreground">{s.draft.description}</span>
+              </ReviewCard>
+            );
+          }
+          if (s.kind === "drift") {
+            return (
+              <ReviewCard
+                key={s.id}
+                kind={s.kind}
+                title={s.title}
+                rationale={s.rationale}
+                acceptLabel="Acknowledge"
+                onAccept={() => {
+                  setDefs((prev) =>
+                    prev.map((d) =>
+                      d.id === s.definitionId
+                        ? { ...d, driftFlag: false, driftNote: undefined, driftDate: undefined }
+                        : d,
+                    ),
+                  );
+                  dismissSuggestion(s.id);
+                }}
+                onEdit={() => {
+                  setSelectedId(s.definitionId);
+                  dismissSuggestion(s.id);
+                }}
+                onDismiss={() => dismissSuggestion(s.id)}
+              >
+                <span className="font-mono text-[11px] text-muted-foreground">{s.note}</span>
+              </ReviewCard>
+            );
+          }
+          if (s.kind === "improvement") {
+            return (
+              <ReviewCard
+                key={s.id}
+                kind={s.kind}
+                title={s.title}
+                rationale={s.rationale}
+                onAccept={() => {
+                  setDefs((prev) =>
+                    prev.map((d) =>
+                      d.id === s.definitionId ? { ...d, [s.field]: s.after } : d,
+                    ),
+                  );
+                  dismissSuggestion(s.id);
+                  toast.success("Description updated");
+                }}
+                onDismiss={() => dismissSuggestion(s.id)}
+              >
+                <span className="text-muted-foreground line-through">{s.before}</span>
+                <span className="ml-1">→ {s.after}</span>
+              </ReviewCard>
+            );
+          }
+          return null;
+        })}
+      </ReviewStrip>
+
       {/* Toolbar */}
       <div className="flex h-11 items-center gap-1.5 border-b border-border bg-muted/20 px-6">
         <div className="relative w-72">
