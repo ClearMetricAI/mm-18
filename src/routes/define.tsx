@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Search, ChevronDown, AlertTriangle, Sparkles } from "lucide-react";
+import { Plus, Search, ChevronDown, AlertTriangle, Sparkles, X, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -15,21 +15,36 @@ import {
   suggestImprovements,
   type Suggestion,
 } from "@/lib/engine";
+import { matchesView } from "@/lib/views";
+import { useViews } from "@/lib/views-store";
+import { ViewEditor } from "@/components/view-editor";
+import { useNavigate } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/define")({ component: DefinePage });
+export const Route = createFileRoute("/define")({
+  component: DefinePage,
+  validateSearch: (s: Record<string, unknown>) => ({
+    view: typeof s.view === "string" ? s.view : undefined,
+  }),
+});
 
 type Tab = "inbox" | "library";
 
 function DefinePage() {
+  const { view: viewId } = Route.useSearch();
+  const { views, upsert: upsertView } = useViews();
+  const navigate = useNavigate();
+  const activeView = views.find((v) => v.id === viewId) ?? null;
+
   const [defs, setDefs] = useState<Definition[]>(seedDefs);
   const [suggestions, setSuggestions] = useState<Suggestion[]>(() => [
     ...suggestDefinitionDrafts(),
     ...suggestDriftAlerts(seedDefs),
     ...suggestImprovements(seedDefs),
   ]);
-  const [tab, setTab] = useState<Tab>("inbox");
+  const [tab, setTab] = useState<Tab>(activeView ? "library" : "inbox");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const dismiss = (id: string) =>
     setSuggestions((prev) => prev.filter((s) => s.id !== id));
@@ -40,11 +55,15 @@ function DefinePage() {
 
   const approved = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return defs.filter(
-      (d) =>
-        !q || d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q),
-    );
-  }, [defs, query]);
+    return defs.filter((d) => {
+      if (activeView && !matchesView(d, activeView)) return false;
+      if (!q) return true;
+      return (
+        d.name.toLowerCase().includes(q) ||
+        d.description.toLowerCase().includes(q)
+      );
+    });
+  }, [defs, query, activeView]);
 
   const toggleServe = (id: string) =>
     setDefs((prev) => prev.map((d) => (d.id === id ? { ...d, serveToAi: !d.serveToAi } : d)));
@@ -208,6 +227,30 @@ function DefinePage() {
 
         {tab === "library" && (
           <div className="pt-4">
+            {activeView && (
+              <div className="mb-3 flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-xs">
+                <span className="font-medium">{activeView.name}</span>
+                <span className="text-muted-foreground">
+                  {approved.length} of {defs.length}
+                </span>
+                <div className="ml-auto flex items-center gap-0.5">
+                  <button
+                    onClick={() => setEditorOpen(true)}
+                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    title="Edit view"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={() => navigate({ to: "/define", search: {} })}
+                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    title="Clear view"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="mb-2 flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -317,6 +360,16 @@ function DefinePage() {
           </div>
         )}
       </div>
+      <ViewEditor
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        defs={defs}
+        initial={activeView}
+        onSave={(v) => {
+          upsertView(v);
+          navigate({ to: "/define", search: { view: v.id } });
+        }}
+      />
     </div>
   );
 }
