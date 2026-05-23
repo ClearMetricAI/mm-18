@@ -40,17 +40,22 @@ import {
   Gavel,
 } from "lucide-react";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   definitions,
   testQuestions as seedQuestions,
   availableModels,
   judgeModel,
-  draftTestQuestions,
   type TestQuestion,
 } from "@/lib/mock-data";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ReviewCard, ReviewStrip } from "@/components/review-card";
+import {
+  suggestTestQuestions,
+  suggestionToTestQuestion,
+  type TestQuestionSuggestion,
+} from "@/lib/engine";
 
 export const Route = createFileRoute("/experiment")({
   validateSearch: (s: Record<string, unknown>) => ({ def: (s.def as string) ?? "def_net_revenue" }),
@@ -67,9 +72,27 @@ function ExperimentPage() {
   const [model, setModel] = useState(availableModels[0]);
   const [running, setRunning] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
+  const [questionSuggestions, setQuestionSuggestions] = useState<TestQuestionSuggestion[]>([]);
+  const [dismissedSugs, setDismissedSugs] = useState<Set<string>>(new Set());
 
   const def = definitions.find((d) => d.id === selected) ?? definitions[0];
   const qs = questions.filter((q) => q.definitionId === def.id);
+
+  // Auto-load engine suggestions for any def that has no questions yet.
+  useEffect(() => {
+    if (qs.length === 0 && questionSuggestions.every((s) => !s.id.includes(def.id))) {
+      const fresh = suggestTestQuestions(def).map((s) => ({
+        ...s,
+        id: `${s.id}_${def.id}`,
+      }));
+      setQuestionSuggestions((prev) => [...prev, ...fresh]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [def.id]);
+
+  const visibleSugs = questionSuggestions.filter(
+    (s) => s.id.endsWith(def.id) && !dismissedSugs.has(s.id),
+  );
 
   const filteredDefs = useMemo(() => {
     const q = defQuery.toLowerCase();
@@ -238,16 +261,16 @@ function ExperimentPage() {
                 variant="ghost"
                 className="h-7 text-xs"
                 onClick={() => {
-                  const drafted = draftTestQuestions(def);
-                  setQuestions((prev) => [...prev, ...drafted]);
-                  setOpenQ(drafted[0].id);
-                  toast.success(`${drafted.length} questions drafted`, {
-                    description: "Review and run — baseline & ClearMetric responses come from real model runs.",
-                  });
+                  const fresh = suggestTestQuestions(def).map((s) => ({
+                    ...s,
+                    id: `${s.id}_${def.id}`,
+                  }));
+                  setQuestionSuggestions((prev) => [...prev, ...fresh]);
+                  toast.success(`${fresh.length} more suggestions`);
                 }}
               >
                 <Sparkles className="mr-1 h-3.5 w-3.5" />
-                Generate questions
+                Suggest more
               </Button>
               <Button size="sm" className="h-7 text-xs" onClick={runAll} disabled={running === "all"}>
                 {running === "all" ? (
@@ -280,6 +303,37 @@ function ExperimentPage() {
 
 
           <div className="flex-1 overflow-y-auto">
+            {/* Engine-suggested test questions */}
+            <ReviewStrip count={visibleSugs.length} label="suggested test question">
+              {visibleSugs.map((s) => (
+                <ReviewCard
+                  key={s.id}
+                  kind={s.kind}
+                  title={s.title}
+                  rationale={s.rationale}
+                  acceptLabel="Add"
+                  onAccept={() => {
+                    setQuestions((prev) => [
+                      ...prev,
+                      suggestionToTestQuestion(s, def.id),
+                    ]);
+                    setDismissedSugs((prev) => new Set(prev).add(s.id));
+                  }}
+                  onDismiss={() =>
+                    setDismissedSugs((prev) => new Set(prev).add(s.id))
+                  }
+                >
+                  <div className="space-y-0.5">
+                    {s.criteria.map((c, i) => (
+                      <div key={i} className="text-muted-foreground">
+                        ✓ {c}
+                      </div>
+                    ))}
+                  </div>
+                </ReviewCard>
+              ))}
+            </ReviewStrip>
+
             {/* ROI headline — one line, one number */}
             <div className="px-6 py-5">
               {scores.questions === 0 ? (

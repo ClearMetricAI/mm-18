@@ -35,6 +35,13 @@ import { useEffect, useMemo, useState } from "react";
 import { definitions as seedDefs, draftField, type Definition } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ReviewCard, ReviewStrip } from "@/components/review-card";
+import {
+  suggestDefinitionDrafts,
+  suggestDriftAlerts,
+  suggestImprovements,
+  type Suggestion,
+} from "@/lib/engine";
 
 export const Route = createFileRoute("/define")({ component: DefinePage });
 
@@ -53,6 +60,15 @@ function DefinePage() {
   const [drafting, setDrafting] = useState<"description" | "formula" | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+
+  // Engine-produced suggestions queue. Seeded from current defs; dismissable.
+  const [suggestions, setSuggestions] = useState<Suggestion[]>(() => [
+    ...suggestDefinitionDrafts(),
+    ...suggestDriftAlerts(seedDefs),
+    ...suggestImprovements(seedDefs),
+  ]);
+  const dismissSuggestion = (id: string) =>
+    setSuggestions((prev) => prev.filter((s) => s.id !== id));
 
   const runDraft = async (def: Definition, field: "description" | "formula") => {
     setDrafting(field);
@@ -198,6 +214,82 @@ function DefinePage() {
           </Button>
         </div>
       </div>
+
+      {/* Engine suggestion strip */}
+      <ReviewStrip count={suggestions.length}>
+        {suggestions.map((s) => {
+          if (s.kind === "definition") {
+            return (
+              <ReviewCard
+                key={s.id}
+                kind={s.kind}
+                title={s.title}
+                rationale={s.rationale}
+                onAccept={() => {
+                  setDefs((prev) => [s.draft, ...prev]);
+                  dismissSuggestion(s.id);
+                  toast.success(`${s.draft.name} added as draft`);
+                }}
+                onDismiss={() => dismissSuggestion(s.id)}
+              >
+                <span className="text-muted-foreground">{s.draft.description}</span>
+              </ReviewCard>
+            );
+          }
+          if (s.kind === "drift") {
+            return (
+              <ReviewCard
+                key={s.id}
+                kind={s.kind}
+                title={s.title}
+                rationale={s.rationale}
+                acceptLabel="Acknowledge"
+                onAccept={() => {
+                  setDefs((prev) =>
+                    prev.map((d) =>
+                      d.id === s.definitionId
+                        ? { ...d, driftFlag: false, driftNote: undefined, driftDate: undefined }
+                        : d,
+                    ),
+                  );
+                  dismissSuggestion(s.id);
+                }}
+                onEdit={() => {
+                  setSelectedId(s.definitionId);
+                  dismissSuggestion(s.id);
+                }}
+                onDismiss={() => dismissSuggestion(s.id)}
+              >
+                <span className="font-mono text-[11px] text-muted-foreground">{s.note}</span>
+              </ReviewCard>
+            );
+          }
+          if (s.kind === "improvement") {
+            return (
+              <ReviewCard
+                key={s.id}
+                kind={s.kind}
+                title={s.title}
+                rationale={s.rationale}
+                onAccept={() => {
+                  setDefs((prev) =>
+                    prev.map((d) =>
+                      d.id === s.definitionId ? { ...d, [s.field]: s.after } : d,
+                    ),
+                  );
+                  dismissSuggestion(s.id);
+                  toast.success("Description updated");
+                }}
+                onDismiss={() => dismissSuggestion(s.id)}
+              >
+                <span className="text-muted-foreground line-through">{s.before}</span>
+                <span className="ml-1">→ {s.after}</span>
+              </ReviewCard>
+            );
+          }
+          return null;
+        })}
+      </ReviewStrip>
 
       {/* Toolbar */}
       <div className="flex h-11 items-center gap-1.5 border-b border-border bg-muted/20 px-6">

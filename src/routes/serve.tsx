@@ -11,6 +11,9 @@ import { useMemo, useState } from "react";
 import { activityLog, REF_TS, definitions } from "@/lib/mock-data";
 import { ChevronRight, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ReviewCard, ReviewStrip } from "@/components/review-card";
+import { suggestAliases, type AliasSuggestion } from "@/lib/engine";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/serve")({ component: ServePage });
 
@@ -32,6 +35,9 @@ function ServePage() {
   const [user, setUser] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copiedSummary, setCopiedSummary] = useState(false);
+  const [aliasSugs, setAliasSugs] = useState<AliasSuggestion[]>([]);
+  const dismissAlias = (id: string) =>
+    setAliasSugs((prev) => prev.filter((s) => s.id !== id));
 
   const agents = useMemo(() => Array.from(new Set(activityLog.map((a) => a.agent))), []);
   const users = useMemo(() => Array.from(new Set(activityLog.map((a) => a.user))), []);
@@ -95,6 +101,35 @@ function ServePage() {
   return (
     <div className="flex h-screen flex-col">
       <PageHeader title="Serve" />
+
+      <ReviewStrip count={aliasSugs.length} label="alias suggestion">
+        {aliasSugs.map((s) => (
+          <ReviewCard
+            key={s.id}
+            kind={s.kind}
+            title={s.title}
+            rationale={s.rationale}
+            acceptLabel="Add aliases"
+            onAccept={() => {
+              dismissAlias(s.id);
+              toast.success(`Aliases added: ${s.aliases.join(", ")}`);
+            }}
+            onDismiss={() => dismissAlias(s.id)}
+          >
+            <div className="flex flex-wrap gap-1">
+              {s.aliases.map((a) => (
+                <span
+                  key={a}
+                  className="rounded border border-border bg-muted/40 px-1.5 py-0.5 font-mono text-[10px]"
+                >
+                  {a}
+                </span>
+              ))}
+            </div>
+          </ReviewCard>
+        ))}
+      </ReviewStrip>
+
 
       {/* Section 1 — ROI summary */}
       <div className="border-b border-border bg-muted/20 px-6 py-4">
@@ -163,14 +198,18 @@ function ServePage() {
           </div>
           <ul className="space-y-1.5">
             {neverRequested.map((d) => (
-              <li
-                key={d.id}
-                className="flex items-center justify-between gap-3 text-xs"
-              >
+              <li key={d.id} className="flex items-center justify-between gap-3 text-xs">
                 <span className="truncate">{d.name}</span>
-                <span className="shrink-0 rounded-full bg-[var(--warning,theme(colors.amber.500))]/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 ring-1 ring-amber-500/20 dark:text-amber-400">
-                  Unused
-                </span>
+                <button
+                  className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 ring-1 ring-amber-500/20 transition-colors hover:bg-amber-500/20 dark:text-amber-400"
+                  onClick={() => {
+                    if (aliasSugs.some((s) => s.definitionId === d.id)) return;
+                    setAliasSugs((prev) => [...prev, suggestAliases(d)]);
+                  }}
+                  title="See why — and suggested aliases"
+                >
+                  See why
+                </button>
               </li>
             ))}
             {neverRequested.length === 0 && (
