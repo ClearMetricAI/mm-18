@@ -127,6 +127,56 @@ function DefinePage() {
 
   const selected = defs.find((d) => d.id === selectedId);
 
+  // Bulk selection helpers
+  const filteredIds = useMemo(() => filtered.map((d) => d.id), [filtered]);
+  const allChecked = filteredIds.length > 0 && filteredIds.every((id) => checked.has(id));
+  const someChecked = !allChecked && filteredIds.some((id) => checked.has(id));
+
+  const toggleCheck = (id: string) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    if (allChecked) setChecked(new Set());
+    else setChecked(new Set(filteredIds));
+  };
+  const clearChecked = () => setChecked(new Set());
+
+  const bulkSetStatus = (status: Definition["status"]) => {
+    setDefs((prev) => prev.map((d) => (checked.has(d.id) ? { ...d, status } : d)));
+    toast.success(`${checked.size} marked as ${status === "tested" ? "approved" : "draft"}`);
+    clearChecked();
+  };
+  const bulkSetServe = (serveToAi: boolean) => {
+    setDefs((prev) => prev.map((d) => (checked.has(d.id) ? { ...d, serveToAi } : d)));
+    toast.success(`${serveToAi ? "Exposed" : "Hidden from"} AI · ${checked.size} definitions`);
+    clearChecked();
+  };
+  const bulkDelete = () => {
+    const n = checked.size;
+    setDefs((prev) => prev.filter((d) => !checked.has(d.id)));
+    toast.success(`${n} definition${n === 1 ? "" : "s"} deleted`);
+    clearChecked();
+  };
+  const bulkRedraft = async () => {
+    setBulkBusy(true);
+    const ids = Array.from(checked);
+    const targets = defs.filter((d) => ids.includes(d.id));
+    const drafts = await Promise.all(
+      targets.map(async (d) => [d.id, await draftField(d, "description")] as const),
+    );
+    const map = new Map(drafts);
+    setDefs((prev) =>
+      prev.map((d) => (map.has(d.id) ? { ...d, description: map.get(d.id)! } : d)),
+    );
+    setBulkBusy(false);
+    toast.success(`Re-drafted ${ids.length} description${ids.length === 1 ? "" : "s"}`);
+    clearChecked();
+  };
+
   return (
     <div className="flex h-screen flex-col">
       {/* Header */}
