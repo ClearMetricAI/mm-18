@@ -1,13 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { X } from "lucide-react";
-import { useBilling } from "@/lib/billing-mock";
+import { useBilling, canSeeBilling } from "@/lib/billing-mock";
 import { cn } from "@/lib/utils";
 
 export function UsageBanner() {
-  const { scenario } = useBilling();
+  const { scenario, role } = useBilling();
   const [dismissed, setDismissed] = useState(false);
 
+  if (!canSeeBilling(role)) return null;
   if (scenario === "healthy") return null;
   if (scenario === "warning" && dismissed) return null;
 
