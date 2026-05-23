@@ -1,12 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BookOpen, FlaskConical, Radio, Moon, Sun, Sparkles, Settings } from "lucide-react";
+import { BookOpen, Moon, Sun, Sparkles, Settings } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { to: "/define", label: "Define", icon: BookOpen },
-  { to: "/experiment", label: "Experiment", icon: FlaskConical },
-  { to: "/serve", label: "Serve", icon: Radio },
+  { to: "/define", label: "Definitions", icon: BookOpen },
 ] as const;
 
 export function AppSidebar() {

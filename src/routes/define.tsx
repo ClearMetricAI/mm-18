@@ -1,13 +1,13 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Search, FlaskConical, ChevronDown } from "lucide-react";
+import { Plus, Search, ChevronDown, Check, AlertTriangle, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { definitions as seedDefs, type Definition } from "@/lib/mock-data";
+import { definitions as seedDefs, activityLog, type Definition } from "@/lib/mock-data";
 import { ReviewCard } from "@/components/review-card";
 import {
   suggestDefinitionDrafts,
@@ -18,19 +18,26 @@ import {
 
 export const Route = createFileRoute("/define")({ component: DefinePage });
 
+type Tab = "inbox" | "library";
+
 function DefinePage() {
-  const navigate = useNavigate();
   const [defs, setDefs] = useState<Definition[]>(seedDefs);
   const [suggestions, setSuggestions] = useState<Suggestion[]>(() => [
     ...suggestDefinitionDrafts(),
     ...suggestDriftAlerts(seedDefs),
     ...suggestImprovements(seedDefs),
   ]);
+  const [tab, setTab] = useState<Tab>("inbox");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [showUsage, setShowUsage] = useState(false);
 
   const dismiss = (id: string) =>
     setSuggestions((prev) => prev.filter((s) => s.id !== id));
+
+  const drifts = suggestions.filter((s) => s.kind === "drift");
+  const drafts = suggestions.filter((s) => s.kind === "definition");
+  const improvements = suggestions.filter((s) => s.kind === "improvement");
 
   const approved = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -39,6 +46,31 @@ function DefinePage() {
         !q || d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q),
     );
   }, [defs, query]);
+
+  // Serve stats — derived inline so /serve can go away.
+  const usage = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const a of activityLog) {
+      if (!a.definitionName) continue;
+      counts.set(a.definitionName, (counts.get(a.definitionName) ?? 0) + 1);
+    }
+    const total = activityLog.length;
+    const matched = activityLog.filter((a) => a.definitionName).length;
+    const pct = total ? Math.round((matched / total) * 100) : 0;
+    const top = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    return { total, pct, top };
+  }, []);
+
+  const usageByName = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const a of activityLog) {
+      if (!a.definitionName) continue;
+      m.set(a.definitionName, (m.get(a.definitionName) ?? 0) + 1);
+    }
+    return m;
+  }, []);
 
   const toggleServe = (id: string) =>
     setDefs((prev) => prev.map((d) => (d.id === id ? { ...d, serveToAi: !d.serveToAi } : d)));
@@ -63,216 +95,377 @@ function DefinePage() {
       origin: "manual",
     };
     setDefs((prev) => [d, ...prev]);
+    setTab("library");
     setOpenId(id);
   };
 
   return (
     <div className="mx-auto flex h-screen max-w-3xl flex-col">
-      {/* Header */}
-      <header className="flex items-baseline justify-between px-6 pb-2 pt-8">
+      {/* ROI banner — collapses /serve into one sentence */}
+      <button
+        onClick={() => setShowUsage((v) => !v)}
+        className="mx-6 mt-6 flex items-center gap-2.5 rounded-md border border-border bg-muted/30 px-3 py-2 text-left text-xs transition-colors hover:bg-muted/50"
+      >
+        <span className="relative flex h-1.5 w-1.5 shrink-0">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--success)] opacity-60" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--success)]" />
+        </span>
+        <span className="flex-1 text-foreground">
+          <span className="font-medium">{usage.pct}%</span>{" "}
+          <span className="text-muted-foreground">
+            of {usage.total} AI questions this week answered from canon
+          </span>
+        </span>
+        <ChevronDown
+          className={cn(
+            "h-3.5 w-3.5 text-muted-foreground transition-transform",
+            !showUsage && "-rotate-90",
+          )}
+        />
+      </button>
+
+      {showUsage && (
+        <div className="mx-6 mt-1 rounded-md border border-border bg-card px-3 py-2.5">
+          <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Most asked
+          </div>
+          <ul className="space-y-1.5">
+            {usage.top.map(([name, count]) => {
+              const max = usage.top[0]?.[1] ?? 1;
+              return (
+                <li key={name} className="flex items-center gap-3 text-xs">
+                  <span className="w-40 shrink-0 truncate">{name}</span>
+                  <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full bg-primary/70"
+                      style={{ width: `${(count / max) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-6 shrink-0 text-right font-mono tabular-nums text-muted-foreground">
+                    {count}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* Header + tabs */}
+      <header className="px-6 pb-2 pt-6">
         <h1 className="text-xl font-semibold">Definitions</h1>
-        <div className="text-xs text-muted-foreground">
-          <span className="text-foreground">{suggestions.length}</span> to review ·{" "}
-          {defs.length} approved
+        <div className="mt-3 flex items-center gap-1 border-b border-border">
+          <TabBtn active={tab === "inbox"} onClick={() => setTab("inbox")}>
+            Inbox
+            {suggestions.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                {suggestions.length}
+              </span>
+            )}
+          </TabBtn>
+          <TabBtn active={tab === "library"} onClick={() => setTab("library")}>
+            Library
+            <span className="ml-1.5 text-[10px] text-muted-foreground">{defs.length}</span>
+          </TabBtn>
         </div>
       </header>
 
       <div className="flex-1 overflow-y-auto px-6 pb-16">
-        {/* Inbox */}
-        {suggestions.length > 0 && (
-          <section className="space-y-2 pt-4">
-            {suggestions.map((s) => {
-              if (s.kind === "definition") {
-                return (
-                  <ReviewCard
-                    key={s.id}
-                    kind={s.kind}
-                    title={s.title}
-                    rationale={s.rationale}
-                    onAccept={() => {
-                      setDefs((prev) => [s.draft, ...prev]);
-                      dismiss(s.id);
-                      toast.success(`${s.draft.name} added`);
-                    }}
-                    onDismiss={() => dismiss(s.id)}
-                  >
-                    <span className="text-muted-foreground">{s.draft.description}</span>
-                  </ReviewCard>
-                );
-              }
-              if (s.kind === "drift") {
-                return (
-                  <ReviewCard
-                    key={s.id}
-                    kind={s.kind}
-                    title={s.title}
-                    rationale={s.rationale}
-                    acceptLabel="Acknowledge"
-                    onAccept={() => {
-                      setDefs((prev) =>
-                        prev.map((d) =>
-                          d.id === s.definitionId
-                            ? { ...d, driftFlag: false, driftNote: undefined, driftDate: undefined }
-                            : d,
-                        ),
-                      );
-                      dismiss(s.id);
-                    }}
-                    onEdit={() => {
-                      setOpenId(s.definitionId);
-                      dismiss(s.id);
-                    }}
-                    onDismiss={() => dismiss(s.id)}
-                  >
-                    <span className="font-mono text-[11px] text-muted-foreground">{s.note}</span>
-                  </ReviewCard>
-                );
-              }
-              if (s.kind === "improvement") {
-                return (
-                  <ReviewCard
-                    key={s.id}
-                    kind={s.kind}
-                    title={s.title}
-                    rationale={s.rationale}
-                    onAccept={() => {
-                      setDefs((prev) =>
-                        prev.map((d) =>
-                          d.id === s.definitionId ? { ...d, [s.field]: s.after } : d,
-                        ),
-                      );
-                      dismiss(s.id);
-                      toast.success("Description updated");
-                    }}
-                    onDismiss={() => dismiss(s.id)}
-                  >
-                    <span className="text-muted-foreground line-through">{s.before}</span>
-                    <span className="ml-1">→ {s.after}</span>
-                  </ReviewCard>
-                );
-              }
-              return null;
-            })}
-          </section>
+        {tab === "inbox" && (
+          <div className="space-y-6 pt-4">
+            {drifts.length > 0 && (
+              <SectionGroup
+                icon={<AlertTriangle className="h-3 w-3" />}
+                tone="warn"
+                label="Drift — definitions you blessed may have broken"
+              >
+                {drifts.map((s) =>
+                  s.kind === "drift" ? (
+                    <ReviewCard
+                      key={s.id}
+                      kind={s.kind}
+                      title={s.title}
+                      rationale={s.rationale}
+                      acceptLabel="Acknowledge"
+                      onAccept={() => {
+                        setDefs((prev) =>
+                          prev.map((d) =>
+                            d.id === s.definitionId
+                              ? { ...d, driftFlag: false, driftNote: undefined, driftDate: undefined }
+                              : d,
+                          ),
+                        );
+                        dismiss(s.id);
+                      }}
+                      onEdit={() => {
+                        setTab("library");
+                        setOpenId(s.definitionId);
+                        dismiss(s.id);
+                      }}
+                      onDismiss={() => dismiss(s.id)}
+                    >
+                      <span className="font-mono text-[11px] text-muted-foreground">{s.note}</span>
+                    </ReviewCard>
+                  ) : null,
+                )}
+              </SectionGroup>
+            )}
+
+            {drafts.length > 0 && (
+              <SectionGroup
+                icon={<Sparkles className="h-3 w-3" />}
+                tone="brand"
+                label="New drafts — bless them so the AI can use them"
+              >
+                {drafts.map((s) =>
+                  s.kind === "definition" ? (
+                    <ReviewCard
+                      key={s.id}
+                      kind={s.kind}
+                      title={s.title}
+                      rationale={s.rationale}
+                      onAccept={() => {
+                        setDefs((prev) => [s.draft, ...prev]);
+                        dismiss(s.id);
+                        toast.success(`${s.draft.name} added`);
+                      }}
+                      onDismiss={() => dismiss(s.id)}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="text-muted-foreground">{s.draft.description}</div>
+                        <pre className="overflow-x-auto rounded border border-border bg-muted/40 p-2 font-mono text-[10.5px] leading-relaxed text-foreground/80">
+{s.draft.formula}
+                        </pre>
+                      </div>
+                    </ReviewCard>
+                  ) : null,
+                )}
+              </SectionGroup>
+            )}
+
+            {improvements.length > 0 && (
+              <SectionGroup
+                icon={<Sparkles className="h-3 w-3" />}
+                tone="brand"
+                label="Improvements — small edits the engine recommends"
+              >
+                {improvements.map((s) =>
+                  s.kind === "improvement" ? (
+                    <ReviewCard
+                      key={s.id}
+                      kind={s.kind}
+                      title={s.title}
+                      rationale={s.rationale}
+                      onAccept={() => {
+                        setDefs((prev) =>
+                          prev.map((d) =>
+                            d.id === s.definitionId ? { ...d, [s.field]: s.after } : d,
+                          ),
+                        );
+                        dismiss(s.id);
+                        toast.success("Updated");
+                      }}
+                      onDismiss={() => dismiss(s.id)}
+                    >
+                      <span className="text-muted-foreground line-through">{s.before}</span>
+                      <span className="ml-1">→ {s.after}</span>
+                    </ReviewCard>
+                  ) : null,
+                )}
+              </SectionGroup>
+            )}
+
+            {suggestions.length === 0 && (
+              <div className="rounded-md border border-dashed border-border py-12 text-center text-xs text-muted-foreground">
+                Inbox zero. The engine will surface new drafts and drift here as sources change.
+              </div>
+            )}
+          </div>
         )}
 
-        {/* Library */}
-        <section className="pt-8">
-          <div className="mb-3 flex items-center gap-2">
-            <h2 className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-              Approved
-            </h2>
-            <span className="text-[11px] text-muted-foreground">{approved.length}</span>
-            <button
-              onClick={addBlank}
-              className="ml-auto rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-              title="New definition"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          </div>
+        {tab === "library" && (
+          <div className="pt-4">
+            <div className="mb-2 flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search definitions…"
+                  className="h-8 border-transparent bg-muted/40 pl-8 text-xs shadow-none focus-visible:border-input"
+                />
+              </div>
+              <button
+                onClick={addBlank}
+                className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="New definition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
 
-          <div className="relative mb-2">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search…"
-              className="h-8 border-transparent bg-muted/40 pl-8 text-xs shadow-none focus-visible:border-input"
-            />
-          </div>
-
-          <ul className="divide-y divide-border rounded-md border border-border">
-            {approved.map((d) => {
-              const open = openId === d.id;
-              return (
-                <li key={d.id}>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setOpenId(open ? null : d.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setOpenId(open ? null : d.id);
-                      }
-                    }}
-                    className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-accent/40"
-                  >
-                    <ChevronDown
-                      className={cn(
-                        "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
-                        !open && "-rotate-90",
-                      )}
-                    />
-                    <span className="truncate text-sm font-medium">{d.name}</span>
-                    <span className="ml-auto flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-[10px] text-muted-foreground">
-                        {d.serveToAi ? "Served" : "Hidden"}
-                      </span>
-                      <Switch
-                        checked={d.serveToAi}
-                        onCheckedChange={() => toggleServe(d.id)}
+            <ul className="divide-y divide-border rounded-md border border-border">
+              {approved.map((d) => {
+                const open = openId === d.id;
+                const calls = usageByName.get(d.name) ?? 0;
+                return (
+                  <li key={d.id}>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setOpenId(open ? null : d.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setOpenId(open ? null : d.id);
+                        }
+                      }}
+                      className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-accent/40"
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
+                          !open && "-rotate-90",
+                        )}
                       />
-                    </span>
-                  </div>
-                  {open && (
-                    <div className="space-y-3 border-t border-border bg-muted/20 px-9 py-3">
-                      <Field label="Name">
-                        <Input
-                          value={d.name}
-                          onChange={(e) => updateField(d.id, { name: e.target.value })}
-                          className="h-8 text-sm"
-                        />
-                      </Field>
-                      <Field label="Description">
-                        <Textarea
-                          value={d.description}
-                          onChange={(e) => updateField(d.id, { description: e.target.value })}
-                          rows={3}
-                          className="text-sm"
-                        />
-                      </Field>
-                      <Field label="Formula">
-                        <Textarea
-                          value={d.formula}
-                          onChange={(e) => updateField(d.id, { formula: e.target.value })}
-                          rows={2}
-                          className="font-mono text-xs"
-                        />
-                      </Field>
-                      <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
-                        <span>
-                          {d.owner} · {d.source}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={() =>
-                            navigate({
-                              to: "/experiment",
-                              search: { def: d.id } as never,
-                            })
-                          }
+                      <span className="truncate text-sm font-medium">{d.name}</span>
+                      {d.status === "tested" ? (
+                        <span
+                          className="inline-flex shrink-0 items-center gap-0.5 text-[10px] text-[var(--success)]"
+                          title="Verified by test questions"
                         >
-                          <FlaskConical className="mr-1 h-3 w-3" /> Test
-                        </Button>
-                      </div>
+                          <Check className="h-3 w-3" />
+                          verified
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-[10px] text-muted-foreground">untested</span>
+                      )}
+                      {d.driftFlag && (
+                        <span
+                          className="inline-flex shrink-0 items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400"
+                          title={d.driftNote}
+                        >
+                          <AlertTriangle className="h-3 w-3" />
+                          drift
+                        </span>
+                      )}
+                      <span className="ml-auto flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                        {calls > 0 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {calls} call{calls === 1 ? "" : "s"}
+                          </span>
+                        )}
+                        <Switch
+                          checked={d.serveToAi}
+                          onCheckedChange={() => toggleServe(d.id)}
+                          title={d.serveToAi ? "Served to AI" : "Hidden from AI"}
+                        />
+                      </span>
                     </div>
-                  )}
+                    {open && (
+                      <div className="space-y-3 border-t border-border bg-muted/20 px-9 py-3">
+                        <Field label="Name">
+                          <Input
+                            value={d.name}
+                            onChange={(e) => updateField(d.id, { name: e.target.value })}
+                            className="h-8 text-sm"
+                          />
+                        </Field>
+                        <Field label="Description">
+                          <Textarea
+                            value={d.description}
+                            onChange={(e) => updateField(d.id, { description: e.target.value })}
+                            rows={3}
+                            className="text-sm"
+                          />
+                        </Field>
+                        <Field label="Formula">
+                          <Textarea
+                            value={d.formula}
+                            onChange={(e) => updateField(d.id, { formula: e.target.value })}
+                            rows={2}
+                            className="font-mono text-xs"
+                          />
+                        </Field>
+                        <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
+                          <span>
+                            {d.owner} · {d.source}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs"
+                            onClick={() => setOpenId(null)}
+                          >
+                            Done
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+              {approved.length === 0 && (
+                <li className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  No matches.
                 </li>
-              );
-            })}
-            {approved.length === 0 && (
-              <li className="px-3 py-6 text-center text-xs text-muted-foreground">
-                No matches.
-              </li>
-            )}
-          </ul>
-        </section>
+              )}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function TabBtn({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "-mb-px flex items-center border-b-2 px-3 py-2 text-sm transition-colors",
+        active
+          ? "border-foreground font-medium text-foreground"
+          : "border-transparent text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SectionGroup({
+  icon,
+  tone,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  tone: "warn" | "brand";
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <div
+        className={cn(
+          "mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider",
+          tone === "warn" ? "text-amber-600 dark:text-amber-400" : "text-primary",
+        )}
+      >
+        {icon}
+        {label}
+      </div>
+      <div className="space-y-2">{children}</div>
+    </section>
   );
 }
 
