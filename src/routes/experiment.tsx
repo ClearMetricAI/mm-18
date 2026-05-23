@@ -41,7 +41,7 @@ import {
   Info,
   Gavel,
   SlidersHorizontal,
-  Paperclip,
+  
 } from "lucide-react";
 
 import { useMemo, useState } from "react";
