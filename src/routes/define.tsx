@@ -18,6 +18,7 @@ import {
 import { matchesView } from "@/lib/views";
 import { useViews } from "@/lib/views-store";
 import { ViewEditor } from "@/components/view-editor";
+import { useBilling } from "@/lib/billing-mock";
 import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/define")({
