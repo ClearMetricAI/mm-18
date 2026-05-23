@@ -9,8 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ServeRouteImport } from './routes/serve'
+import { Route as ExperimentRouteImport } from './routes/experiment'
+import { Route as DefineRouteImport } from './routes/define'
+import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ServeRoute = ServeRouteImport.update({
+  id: '/serve',
+  path: '/serve',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExperimentRoute = ExperimentRouteImport.update({
+  id: '/experiment',
+  path: '/experiment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DefineRoute = DefineRouteImport.update({
+  id: '/define',
+  path: '/define',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectRoute = ConnectRouteImport.update({
+  id: '/connect',
+  path: '/connect',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +43,72 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/connect': typeof ConnectRoute
+  '/define': typeof DefineRoute
+  '/experiment': typeof ExperimentRoute
+  '/serve': typeof ServeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/connect': typeof ConnectRoute
+  '/define': typeof DefineRoute
+  '/experiment': typeof ExperimentRoute
+  '/serve': typeof ServeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/connect': typeof ConnectRoute
+  '/define': typeof DefineRoute
+  '/experiment': typeof ExperimentRoute
+  '/serve': typeof ServeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/connect' | '/define' | '/experiment' | '/serve'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/connect' | '/define' | '/experiment' | '/serve'
+  id: '__root__' | '/' | '/connect' | '/define' | '/experiment' | '/serve'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ConnectRoute: typeof ConnectRoute
+  DefineRoute: typeof DefineRoute
+  ExperimentRoute: typeof ExperimentRoute
+  ServeRoute: typeof ServeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/serve': {
+      id: '/serve'
+      path: '/serve'
+      fullPath: '/serve'
+      preLoaderRoute: typeof ServeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/experiment': {
+      id: '/experiment'
+      path: '/experiment'
+      fullPath: '/experiment'
+      preLoaderRoute: typeof ExperimentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/define': {
+      id: '/define'
+      path: '/define'
+      fullPath: '/define'
+      preLoaderRoute: typeof DefineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connect': {
+      id: '/connect'
+      path: '/connect'
+      fullPath: '/connect'
+      preLoaderRoute: typeof ConnectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,17 +121,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConnectRoute: ConnectRoute,
+  DefineRoute: DefineRoute,
+  ExperimentRoute: ExperimentRoute,
+  ServeRoute: ServeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
