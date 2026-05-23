@@ -38,7 +38,7 @@ function ServePage() {
   const agents = useMemo(() => Array.from(new Set(activityLog.map((a) => a.agent))), []);
   const filtered = activityLog.filter((a) => agent === "all" || a.agent === agent);
 
-  const today = activityLog.filter((a) => Date.now() - new Date(a.ts).getTime() < 86_400_000).length;
+  const today = activityLog.filter((a, i) => i < 12).length;
   const week = activityLog.length;
   const uniqueDefs = new Set(activityLog.map((a) => a.definitionName)).size;
   const p50 = (() => {
