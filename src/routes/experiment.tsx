@@ -223,6 +223,22 @@ function ExperimentPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() => {
+                  const drafted = draftTestQuestions(def);
+                  setQuestions((prev) => [...prev, ...drafted]);
+                  setOpenQ(drafted[0].id);
+                  toast.success(`${drafted.length} questions drafted`, {
+                    description: "Review and run — baseline & ClearMetric responses come from real model runs.",
+                  });
+                }}
+              >
+                <Sparkles className="mr-1 h-3.5 w-3.5" />
+                Generate questions
+              </Button>
               <Button size="sm" className="h-7 text-xs" onClick={runAll} disabled={running === "all"}>
                 {running === "all" ? (
                   <RotateCw className="mr-1 h-3.5 w-3.5 animate-spin" />
