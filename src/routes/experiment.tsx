@@ -322,7 +322,9 @@ function ExperimentPage() {
                     Baseline setup
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    What your agent already sees in production. We run the test twice: with this alone, then with ClearMetric added.
+                    {baselineCustom
+                      ? "Your custom baseline is active. Both runs use it; only the ClearMetric run also gets the definition."
+                      : "Default = cold model, nothing attached. Add your agent's real prompt and context below so the comparison reflects production."}
                   </p>
                 </div>
                 {baselineCustom && (
