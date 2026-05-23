@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppSidebar";
 import {
   Select,
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState } from "react";
-import { activityLog, definitions } from "@/lib/mock-data";
+import { activityLog } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/serve")({ component: ServePage });
 
@@ -85,40 +85,23 @@ function ServePage() {
           <div>Definition</div>
           <div className="text-right">Latency</div>
         </div>
-        {filtered.map((a) => {
-          const def = definitions.find((d) => d.name === a.definitionName);
-          return (
-            <div
-              key={a.id}
-              className="grid grid-cols-[80px_140px_160px_1fr_160px_70px] items-center border-b border-border px-2 py-2 text-sm transition-colors hover:bg-accent/50"
-            >
-              <div className="text-xs text-muted-foreground">{relTime(a.ts)}</div>
-              <div className="truncate">{a.agent}</div>
-              <div>
-                <Badge variant="secondary" className="font-mono text-[10px] font-normal">
-                  {a.tool}
-                </Badge>
-              </div>
-              <div className="truncate text-muted-foreground">"{a.input}"</div>
-              <div className="truncate font-medium">
-                {def ? (
-                  <Link
-                    to="/m/$defId"
-                    params={{ defId: def.id } as never}
-                    className="hover:text-primary hover:underline underline-offset-2"
-                  >
-                    {a.definitionName}
-                  </Link>
-                ) : (
-                  a.definitionName ?? "—"
-                )}
-              </div>
-              <div className="text-right font-mono text-xs tabular-nums text-muted-foreground">
-                {a.latencyMs}ms
-              </div>
+        {filtered.map((a) => (
+          <div
+            key={a.id}
+            className="grid grid-cols-[80px_140px_160px_1fr_160px_70px] items-center border-b border-border px-2 py-2 text-sm transition-colors hover:bg-accent/50"
+          >
+            <div className="text-xs text-muted-foreground">{relTime(a.ts)}</div>
+            <div className="truncate">{a.agent}</div>
+            <div>
+              <Badge variant="secondary" className="font-mono text-[10px] font-normal">
+                {a.tool}
+              </Badge>
             </div>
-          );
-        })}
+            <div className="truncate text-muted-foreground">"{a.input}"</div>
+            <div className="truncate font-medium">{a.definitionName ?? "—"}</div>
+            <div className="text-right font-mono text-xs tabular-nums text-muted-foreground">{a.latencyMs}ms</div>
+          </div>
+        ))}
       </div>
     </div>
   );

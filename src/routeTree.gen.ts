@@ -14,7 +14,6 @@ import { Route as ExperimentRouteImport } from './routes/experiment'
 import { Route as DefineRouteImport } from './routes/define'
 import { Route as ConnectRouteImport } from './routes/connect'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as MDefIdRouteImport } from './routes/m.$defId'
 
 const ServeRoute = ServeRouteImport.update({
   id: '/serve',
@@ -41,11 +40,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MDefIdRoute = MDefIdRouteImport.update({
-  id: '/m/$defId',
-  path: '/m/$defId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,7 +47,6 @@ export interface FileRoutesByFullPath {
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
   '/serve': typeof ServeRoute
-  '/m/$defId': typeof MDefIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -61,7 +54,6 @@ export interface FileRoutesByTo {
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
   '/serve': typeof ServeRoute
-  '/m/$defId': typeof MDefIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -70,27 +62,13 @@ export interface FileRoutesById {
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
   '/serve': typeof ServeRoute
-  '/m/$defId': typeof MDefIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/connect'
-    | '/define'
-    | '/experiment'
-    | '/serve'
-    | '/m/$defId'
+  fullPaths: '/' | '/connect' | '/define' | '/experiment' | '/serve'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/connect' | '/define' | '/experiment' | '/serve' | '/m/$defId'
-  id:
-    | '__root__'
-    | '/'
-    | '/connect'
-    | '/define'
-    | '/experiment'
-    | '/serve'
-    | '/m/$defId'
+  to: '/' | '/connect' | '/define' | '/experiment' | '/serve'
+  id: '__root__' | '/' | '/connect' | '/define' | '/experiment' | '/serve'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -99,7 +77,6 @@ export interface RootRouteChildren {
   DefineRoute: typeof DefineRoute
   ExperimentRoute: typeof ExperimentRoute
   ServeRoute: typeof ServeRoute
-  MDefIdRoute: typeof MDefIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -139,13 +116,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/m/$defId': {
-      id: '/m/$defId'
-      path: '/m/$defId'
-      fullPath: '/m/$defId'
-      preLoaderRoute: typeof MDefIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -155,7 +125,6 @@ const rootRouteChildren: RootRouteChildren = {
   DefineRoute: DefineRoute,
   ExperimentRoute: ExperimentRoute,
   ServeRoute: ServeRoute,
-  MDefIdRoute: MDefIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
