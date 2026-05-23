@@ -30,9 +30,23 @@ export const BREAKDOWN_TEAM = {
 
 export type Scenario = "healthy" | "warning" | "hit";
 
+export type Role = "owner" | "admin" | "editor" | "viewer";
+
+export const ROLES: { id: Role; name: string; blurb: string }[] = [
+  { id: "owner", name: "Owner", blurb: "Full access, including billing" },
+  { id: "admin", name: "Admin", blurb: "Manage workspace and billing" },
+  { id: "editor", name: "Editor", blurb: "Define and experiment, no billing" },
+  { id: "viewer", name: "Viewer", blurb: "Read-only access" },
+];
+
+export function canSeeBilling(role: Role): boolean {
+  return role === "owner" || role === "admin";
+}
+
 const KEY_SCENARIO = "clearmetric:billing-scenario";
 const KEY_PLAN = "clearmetric:billing-plan";
 const KEY_BONUS = "clearmetric:billing-bonus";
+const KEY_ROLE = "clearmetric:role";
 const EVENT = "clearmetric:billing-changed";
 
 function read<T>(key: string, fallback: T): T {
@@ -66,15 +80,15 @@ function compute() {
   const scenario = read<Scenario>(KEY_SCENARIO, "healthy");
   const planId = read<Plan["id"]>(KEY_PLAN, "team");
   const bonus = read<number>(KEY_BONUS, 0);
+  const role = read<Role>(KEY_ROLE, "owner");
   const plan = PLANS.find((p) => p.id === planId) ?? PLANS[2];
 
-  // Base used depends on scenario, scaled to plan.
   const pct = scenario === "healthy" ? 0.62 : scenario === "warning" ? 0.85 : 1;
   const baseUsed = Math.round(plan.monthlyCredits * pct);
   const totalCredits = plan.monthlyCredits + bonus;
   const used = Math.min(baseUsed, totalCredits);
 
-  return { scenario, plan, used, total: totalCredits, bonus };
+  return { scenario, plan, used, total: totalCredits, bonus, role };
 }
 
 export function useBilling() {
@@ -99,6 +113,10 @@ export function setScenario(s: Scenario) {
 
 export function setPlan(id: Plan["id"]) {
   write(KEY_PLAN, id);
+}
+
+export function setRole(r: Role) {
+  write(KEY_ROLE, r);
 }
 
 export function addBonus(credits: number) {

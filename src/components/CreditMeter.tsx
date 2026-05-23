@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { useBilling, formatK } from "@/lib/billing-mock";
+import { useBilling, formatK, canSeeBilling } from "@/lib/billing-mock";
 import { cn } from "@/lib/utils";
 
 export function CreditMeter() {
-  const { used, total } = useBilling();
+  const { used, total, role } = useBilling();
+  if (!canSeeBilling(role)) return null;
   const pct = Math.min(100, (used / total) * 100);
   const tone =
     pct >= 100 ? "bg-destructive" : pct >= 80 ? "bg-amber-500" : "bg-foreground/70";
