@@ -41,7 +41,7 @@ function ConnectPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <PageHeader title="Connect" description="Data sources, LLM keys, and your MCP endpoint." />
+      <PageHeader title="Connect" meta="Data sources · LLM keys · MCP endpoint" />
 
       <Section
         title="Data sources"
