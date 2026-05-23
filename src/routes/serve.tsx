@@ -47,7 +47,7 @@ function ServePage() {
   })();
 
   return (
-    <div>
+    <div className="h-full overflow-y-auto">
       <PageHeader title="Serve" description="Live activity from AI assistants using your definitions." />
 
       <div className="grid grid-cols-4 gap-3 px-8 py-6">
