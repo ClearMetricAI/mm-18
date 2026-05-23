@@ -55,6 +55,7 @@ import {
 } from "@/lib/mock-data";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useBaselines, baselinesApi } from "@/lib/baselines-store";
 
 export const Route = createFileRoute("/experiment")({
   validateSearch: (s: Record<string, unknown>) => ({ def: (s.def as string) ?? "def_net_revenue" }),
