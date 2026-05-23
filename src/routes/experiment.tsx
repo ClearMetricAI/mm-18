@@ -215,9 +215,10 @@ function ExperimentPage() {
                     Judge: <span className="font-mono text-foreground">{judgeModel}</span>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[260px] text-xs">
-                  Each criterion is graded yes/no by an LLM judge that reads the answer and the
-                  criterion. Reasoning is shown next to every check.
+                <TooltipContent side="bottom" className="max-w-[280px] text-xs">
+                  Each criterion is graded yes/no by an LLM judge with a one-line reason.
+                  Baseline = LLM with schema metadata only (what Copilot sees today). ClearMetric
+                  = same model + the governed definition.
                 </TooltipContent>
               </Tooltip>
               <Select value={model} onValueChange={setModel}>
@@ -702,9 +703,8 @@ function AskAI({ defName }: { defName: string }) {
     setResult(null);
     await new Promise((r) => setTimeout(r, 700));
     setResult({
-      baseline:
-        "Without specific company context, I'd interpret this in the most common industry sense. The answer may vary based on definitions used in your organization.",
-      cm: `Based on the company definition of ${defName}, the answer is grounded in the formula, scope, and exclusions documented for this metric.`,
+      baseline: `Based on the available schema, ${defName.toLowerCase()} appears to be derivable from the relevant tables, though the exact business rules depend on how your team defines it.`,
+      cm: `Using the governed ${defName} definition: the answer follows the documented formula, scope, and exclusions exactly — no inference required.`,
     });
     setLoading(false);
   };
