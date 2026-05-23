@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,8 +16,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuLabel,
-  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
@@ -40,8 +38,6 @@ import {
   MoreHorizontal,
   Info,
   Gavel,
-  SlidersHorizontal,
-  
 } from "lucide-react";
 
 import { useMemo, useState } from "react";
@@ -55,7 +51,6 @@ import {
 } from "@/lib/mock-data";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useBaselines, baselinesApi } from "@/lib/baselines-store";
 
 export const Route = createFileRoute("/experiment")({
   validateSearch: (s: Record<string, unknown>) => ({ def: (s.def as string) ?? "def_net_revenue" }),
@@ -72,12 +67,6 @@ function ExperimentPage() {
   const [model, setModel] = useState(availableModels[0]);
   const [running, setRunning] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
-  const baselines = useBaselines();
-  const activeBaselines = baselines.filter((b) => b.selected);
-  const [viewBaselineId, setViewBaselineId] = useState<string>("cold");
-  // Make sure view always points at a selected baseline
-  const effectiveViewId =
-    activeBaselines.find((b) => b.id === viewBaselineId)?.id ?? activeBaselines[0]?.id ?? "cold";
 
   const def = definitions.find((d) => d.id === selected) ?? definitions[0];
   const qs = questions.filter((q) => q.definitionId === def.id);
@@ -226,57 +215,12 @@ function ExperimentPage() {
                     Judge: <span className="font-mono text-foreground">{judgeModel}</span>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[260px] text-xs">
-                  Each criterion is graded yes/no by an LLM judge that reads the answer and the
-                  criterion. Reasoning is shown next to every check.
+                <TooltipContent side="bottom" className="max-w-[280px] text-xs">
+                  Each criterion is graded yes/no by an LLM judge with a one-line reason.
+                  Baseline = LLM with schema metadata only (what Copilot sees today). ClearMetric
+                  = same model + the governed definition.
                 </TooltipContent>
               </Tooltip>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] transition-colors",
-                      activeBaselines.length > 1
-                        ? "border-primary/40 bg-primary/5 text-foreground"
-                        : "border-border text-muted-foreground hover:text-foreground",
-                    )}
-                    title="Pick which baselines to compare against ClearMetric"
-                  >
-                    <SlidersHorizontal className="h-3 w-3" />
-                    Baselines:
-                    <span className="font-medium text-foreground">
-                      {activeBaselines.length === 0
-                        ? "none"
-                        : activeBaselines.length === 1
-                        ? activeBaselines[0].name
-                        : `${activeBaselines.length} selected`}
-                    </span>
-                    <ChevronDown className="h-3 w-3 opacity-60" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 text-xs">
-                  <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Compare against
-                  </DropdownMenuLabel>
-                  {baselines.map((b) => (
-                    <DropdownMenuCheckboxItem
-                      key={b.id}
-                      checked={b.selected}
-                      onCheckedChange={() => baselinesApi.toggle(b.id)}
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-xs"
-                    >
-                      {b.name}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild className="text-xs">
-                    <Link to="/baselines" className="flex items-center gap-2">
-                      <Plus className="h-3 w-3" /> Manage baselines
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
               <Select value={model} onValueChange={setModel}>
                 <SelectTrigger className="h-7 w-[150px] text-xs">
                   <SelectValue />
@@ -333,31 +277,6 @@ function ExperimentPage() {
             </div>
           )}
 
-          {/* Baseline tab strip — only when comparing more than one */}
-          {activeBaselines.length > 1 && (
-            <div className="flex items-center gap-1 border-b border-border bg-muted/20 px-6 py-2">
-              <span className="mr-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                Viewing
-              </span>
-              {activeBaselines.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => setViewBaselineId(b.id)}
-                  className={cn(
-                    "rounded-md px-2 py-1 text-[11px] transition-colors",
-                    effectiveViewId === b.id
-                      ? "bg-background text-foreground ring-1 ring-border"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {b.name}
-                </button>
-              ))}
-              <span className="ml-auto text-[10px] text-muted-foreground">
-                vs ClearMetric · <Link to="/baselines" className="hover:text-foreground hover:underline">edit</Link>
-              </span>
-            </div>
-          )}
 
 
           <div className="flex-1 overflow-y-auto">
@@ -590,9 +509,9 @@ function ExperimentPage() {
 
                               <div className="grid gap-3 md:grid-cols-2">
                                 <ResponsePanel
-                                  label="Ungrounded"
-                                  sublabel="LLM alone"
-                                  tooltip="The model answers from training data only. No company context."
+                                  label="Baseline"
+                                  sublabel="metadata only"
+                                  tooltip="What Copilot or any connected AI sees today: table names, columns, measures, and existing source descriptions — but no governed definitions."
                                   tone="bad"
                                   text={q.baselineResponse}
                                   passed={q.baselinePass}
@@ -600,9 +519,9 @@ function ExperimentPage() {
                                   criteria={q.criteria}
                                 />
                                 <ResponsePanel
-                                  label="Grounded"
-                                  sublabel="LLM + your definitions"
-                                  tooltip="The model answers using your approved ClearMetric definitions as context."
+                                  label="ClearMetric"
+                                  sublabel="metadata + definitions"
+                                  tooltip="Same model and metadata, plus the governed ClearMetric definition (description, formula, exclusions, owner, scope)."
                                   tone="good"
                                   text={q.cmResponse}
                                   passed={q.cmPass}
@@ -784,9 +703,8 @@ function AskAI({ defName }: { defName: string }) {
     setResult(null);
     await new Promise((r) => setTimeout(r, 700));
     setResult({
-      baseline:
-        "Without specific company context, I'd interpret this in the most common industry sense. The answer may vary based on definitions used in your organization.",
-      cm: `Based on the company definition of ${defName}, the answer is grounded in the formula, scope, and exclusions documented for this metric.`,
+      baseline: `Based on the available schema, ${defName.toLowerCase()} appears to be derivable from the relevant tables, though the exact business rules depend on how your team defines it.`,
+      cm: `Using the governed ${defName} definition: the answer follows the documented formula, scope, and exclusions exactly — no inference required.`,
     });
     setLoading(false);
   };
@@ -817,13 +735,13 @@ function AskAI({ defName }: { defName: string }) {
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <div className="overflow-hidden rounded-md border border-border bg-background">
             <div className="border-b bg-destructive/10 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-destructive border-destructive/20">
-              Ungrounded · LLM alone
+              Baseline · metadata only
             </div>
             <div className="px-3 py-2.5 text-xs leading-relaxed">{result.baseline}</div>
           </div>
           <div className="overflow-hidden rounded-md border border-border bg-background">
             <div className="border-b bg-[var(--success)]/10 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-[var(--success)] border-[var(--success)]/20">
-              Grounded · LLM + your definitions
+              ClearMetric · metadata + definitions
             </div>
             <div className="px-3 py-2.5 text-xs leading-relaxed">{result.cm}</div>
           </div>
