@@ -1,10 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Database, BookOpen, FlaskConical, Radio, Moon, Sun, Sparkles } from "lucide-react";
+import { BookOpen, FlaskConical, Radio, Moon, Sun, Sparkles, Settings } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const nav = [
-  { to: "/connect", label: "Connect", icon: Database },
   { to: "/define", label: "Define", icon: BookOpen },
   { to: "/experiment", label: "Experiment", icon: FlaskConical },
   { to: "/serve", label: "Serve", icon: Radio },
@@ -13,6 +12,14 @@ const nav = [
 export function AppSidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggle } = useTheme();
+
+  const linkCls = (active: boolean) =>
+    cn(
+      "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
+      active
+        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+        : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+    );
 
   return (
     <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
@@ -27,16 +34,7 @@ export function AppSidebar() {
         {nav.map(({ to, label, icon: Icon }) => {
           const active = path === to || (to === "/define" && path === "/");
           return (
-            <Link
-              key={to}
-              to={to}
-              className={cn(
-                "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
-                active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                  : "text-sidebar-foreground/75 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
-              )}
-            >
+            <Link key={to} to={to} className={linkCls(active)}>
               <Icon className="h-4 w-4" />
               {label}
             </Link>
@@ -44,11 +42,12 @@ export function AppSidebar() {
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-2">
-        <button
-          onClick={toggle}
-          className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
-        >
+      <div className="border-t border-sidebar-border p-2 space-y-0.5">
+        <Link to="/settings" className={linkCls(path === "/settings")}>
+          <Settings className="h-4 w-4" />
+          Settings
+        </Link>
+        <button onClick={toggle} className={linkCls(false) + " w-full"}>
           {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           {theme === "light" ? "Dark mode" : "Light mode"}
         </button>

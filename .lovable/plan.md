@@ -1,102 +1,94 @@
-## The core question
+## Read against the strategy
 
-**What is Serve actually for?** Today it's a log viewer with 4 stat cards and a 6-column activity table. That's plumbing, not value.
+The strategy doc is unambiguous about what matters:
 
-The user's real questions on this page are:
+- **Define** is the timeless value (the dictionary).
+- **Experiment** is the wedge — *"the Experiment page IS the demo. The product sells itself."*
+- **Serve** is the production loop — definitions go to AI via MCP, every call logged for audit.
+- Everything else is plumbing.
 
-1. **Is it working?** (alive, fast, being used)
-2. **What should I define next?** ← *this is the killer one*
-3. **What's getting used most?** (where does ClearMetric earn its keep)
+The current app is close but the narrative is muddled in three specific places:
 
-Question #2 is the highest-value thing Serve can do. Every time an AI agent asks something that doesn't match a served definition, that's a gap — and a concrete suggestion for what the user should define next. No other page in the app surfaces this. **This is what Serve should lead with.**
+### 1. Sidebar order doesn't tell the story
 
-The raw activity log is still useful for debugging, but it shouldn't be the headline.
+Today: `Connect · Define · Experiment · Serve`. Connect is plumbing but it's listed first, before the actual product. The story the strategy tells is `Define → prove with Experiment → Serve to AI`. Connect should be a low-priority settings entry, not the front door.
+
+**Fix:** reorder to `Define · Experiment · Serve · Settings` (rename Connect → Settings, demote to bottom of the nav near the theme toggle).
+
+### 2. Connect is a grab bag of three unrelated things
+
+It currently holds:
+- **Data sources** (Power BI, SQL) — these feed Define.
+- **LLM keys** (answering model, judge model) — these power Experiment.
+- **MCP endpoint URL + key + live call count** — this is the Serve runtime, duplicated.
+
+That last item is the most damaging: the MCP endpoint card on Connect says "Active · 312 calls this week" which is exactly what the Serve pulse line shows. Two sources of truth for the same fact.
+
+**Fix:**
+- Move the **MCP endpoint URL + API key** to the top of the Serve page as a single thin "Endpoint" strip above the Pulse line. Serve is the right home: it's the page that proves the endpoint is doing something.
+- Keep **data sources** and **LLM keys** in a renamed **Settings** page (was Connect). No live activity counters there — just connection state.
+
+This collapses Connect from three sections to two, removes the duplicate runtime view, and puts the copyable endpoint next to the audit log that proves it works.
+
+### 3. The first impression is the dictionary, not the demo
+
+`/` redirects to `/define`. Right for daily users; wrong for first-time visitors and demo prospects who should land on the Experiment scorecard (the explicit "product sells itself" page).
+
+**Fix:** I'll ask about this — see Question below — because changing it affects daily-user muscle memory.
+
+### What I am NOT changing
+
+- **Define** page: already at the right minimal shape (3-column table, slim header, drawer). Leave alone.
+- **Experiment** page: heavy by necessity — this is the pitch. It earns its weight. Leave alone.
+- **Serve** page: the recent rework (per-user/per-agent grouping, expandable rows with full response) is the right audit shape per strategy. Leave the body alone; just add the endpoint strip at the top.
+- **Mock data**: no changes needed.
 
 ---
 
 ## Plan
 
-### 1. Redesign Serve around "coverage gaps"
+### Step 1 — Reorder + rename sidebar
 
-New page structure, top to bottom:
+`src/components/AppSidebar.tsx`: change `nav` order to Define, Experiment, Serve. Move "Settings" (the renamed Connect, icon `Settings`) to the bottom group next to the theme toggle so it visually reads as a utility, not a top-level workflow step.
 
-```text
-┌────────────────────────────────────────────────────────────┐
-│ Pulse:  47 calls today · 4 agents · 94ms p50 · Live ●     │  ← one line, not 4 cards
-├────────────────────────────────────────────────────────────┤
-│ COVERAGE GAPS                                               │
-│ Queries AI agents asked that weren't matched by any served │
-│ definition. Define these to close the gap.                 │
-│                                                             │
-│ 8 unmatched queries this week                              │
-│ ┌─────────────────────────────────────────────────┐        │
-│ │ "what counts as a power user"         3 asks   →│        │
-│ │ "qbr revenue formula"                 2 asks   →│        │
-│ │ "trial conversion ratio"              2 asks   →│        │
-│ │ "rule of 40"                          1 ask    →│        │
-│ └─────────────────────────────────────────────────┘        │
-│ → click row = "Create definition" prefilled               │
-├────────────────────────────────────────────────────────────┤
-│ MOST-ASKED DEFINITIONS (this week)                          │
-│ Net Revenue        ████████████ 38                          │
-│ Logo Churn         ███████ 22                               │
-│ MRR                ████ 14                                  │
-│ CAC                ██ 8                                     │
-├────────────────────────────────────────────────────────────┤
-│ ACTIVITY  ▾                                  All agents ▾  │
-│ (collapsed by default, expand to see raw log)              │
-└────────────────────────────────────────────────────────────┘
-```
+### Step 2 — Move MCP endpoint to Serve
 
-Why this works:
-- The first thing you see is **what to do next**, not a passive log
-- The pulse line replaces 4 cards — same info, 1/4 the space
-- "Most-asked" justifies the product: *"Net Revenue was answered 38 times this week — that's 38 arguments avoided"*
-- Activity log moves to a collapsible section for debugging only
-
-I'll add `unmatchedQueries` and `topDefinitions` to the mock data so the page feels real.
-
-### 2. Slim the tables — keep only what users scan for
-
-**Serve activity** (when expanded): drop from 6 columns to **3**.
+In `src/routes/serve.tsx`, add a thin strip directly under `PageHeader`:
 
 ```text
-Before:  Time · Agent · Tool · Input · Definition · Latency
-After:   Time · "query"  →  Definition          [meta on hover]
+Endpoint  https://mcp.clearmetric.ai/org_contoso/v1   [copy]
+API key   cm_live_••••2f8a                            [copy]
 ```
 
-Agent, tool, and latency become a tiny secondary line under the query, or appear on row hover. Most of the time you only care: *when, what was asked, what did we serve.*
+Two rows, no card, no extra section header. The existing Pulse line ("Live · 47 calls · 4 users · 4 agents · 94ms p50") sits below — same data the Connect MCP card was showing, but now it's the only place that owns it.
 
-**Define table**: drop from 6 columns to **3**.
+### Step 3 — Slim Connect → Settings
 
-```text
-Before:  Definition+preview · Owner · Domain · Status · Confirmed · AI
-After:   Definition  ·  Owner / Domain (one cell)  ·  AI toggle
-         status dot before the name; confirmed date moves to drawer only
-```
+Rename route file from `src/routes/connect.tsx` to `src/routes/settings.tsx` (and delete the old). Page now has just two sections:
 
-The description preview after the name goes — it's noise at scale (hundreds of rows). Group-by already covers "Owner" or "Domain" when you need them. The drawer has every detail when you click in.
+1. **Data sources** (existing list, unchanged)
+2. **LLM keys** (existing list, unchanged)
 
-### 3. Consistency pass
+Remove the **MCP endpoint** section entirely — it moved to Serve.
 
-- **PageHeader**: Define has its own custom header, Serve/Connect use `PageHeader`. Standardize all four routes on the same slim 56px header pattern (single-line title + right-side actions).
-- **Stat cards everywhere**: replace big 4-up stat-card grids on Serve and Connect with the same one-line "pulse" pattern. Cards waste vertical real estate on a dense product.
-- **Quiet runtime fix** (silent): `relTime` in Serve uses `Date.now()` which causes a hydration mismatch. Switch to the same fixed `REF_TS` we use for `activityLog` timestamps.
+Update `PageHeader` title from "Connect" to "Settings" and the meta to "Data sources · LLM keys".
 
-### 4. Out of scope (calling it out so we don't drift)
+Update the sidebar Link `to` from `/connect` to `/settings`. Any other in-app links to `/connect` (none currently, but check) get redirected.
 
-- Not redesigning Connect significantly — it's correctly minimal already. Just the pulse-line tweak in section 3.
-- Not adding analytics charts / time-series — keep V1 honest and simple.
-- Keeping mock data; no real backend wiring.
+### Step 4 — Decide on the index redirect
+
+This depends on the question below. Either keep `/` → `/define` (current) or change to `/` → `/experiment` for demo-first first impressions.
+
+---
+
+## One question before I implement
+
+Should `/` redirect to **Define** (today — best for daily users) or **Experiment** (the strategy's named demo — best for first-time visitors and prospects)? Either is defensible; I'd lean **Experiment** based on the strategy doc ("the Experiment page IS the demo"), but you may have strong feelings since this changes where the app opens every time.
 
 ---
 
 ## Technical notes
 
-- New mock arrays in `src/lib/mock-data.ts`:
-  - `unmatchedQueries: { query: string; count: number; lastAsked: string }[]`
-  - `topDefinitions: { definitionId: string; count: number }[]` (derived)
-- New `Pulse` component in Serve replacing the 4-card grid
-- `relTime` accepts an optional `now` arg, defaults to `REF_TS` to stay SSR-safe
-- Define table: change grid template from `1fr_140px_120px_90px_100px_70px` to `1fr_180px_70px`; move status into a dot left of the name; drop the inline description preview
-- Serve activity: change grid template to `90px_1fr_200px`; hover-reveal a small `agent · tool · 94ms` footer line per row
+- Renaming `connect.tsx` → `settings.tsx` will cause `routeTree.gen.ts` to regenerate on next dev/build — no manual edit needed there.
+- The MCP endpoint constants currently live inline in `connect.tsx`. They'll move with the endpoint UI into `serve.tsx`. No mock-data file changes.
+- Total surface area: ~3 files edited (`AppSidebar.tsx`, `serve.tsx`, new `settings.tsx`), 1 deleted (`connect.tsx`). No new dependencies, no new components, no schema changes.
