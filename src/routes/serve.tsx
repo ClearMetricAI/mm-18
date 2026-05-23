@@ -157,74 +157,54 @@ function ServePage() {
         </div>
       </div>
 
-      {/* Section 2 — Stats row */}
-      <div className="grid grid-cols-2 gap-px border-b border-border bg-border md:grid-cols-5">
+      {/* Stats — 3 tiles only */}
+      <div className="grid grid-cols-3 gap-px border-b border-border bg-border">
         <StatCard label="Today" value={todayCount} />
         <StatCard label="This week" value={activityLog.length} />
-        <StatCard label="Users" value={users.length} />
-        <StatCard label="Agents" value={agents.length} />
         <StatCard label="p50 latency" value={`${p50}ms`} />
       </div>
 
-      {/* Section 3 — Usage insights */}
-      <div className="grid grid-cols-1 gap-px border-b border-border bg-border md:grid-cols-2">
-        <div className="bg-background px-6 py-5">
-          <div className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Most requested
-          </div>
-          <ul className="space-y-1.5">
-            {mostRequested.arr.map((d) => (
-              <li key={d.name} className="flex items-center gap-3 text-xs">
-                <span className="w-44 shrink-0 truncate">{d.name}</span>
-                <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full bg-primary/70"
-                    style={{ width: `${(d.count / mostRequested.max) * 100}%` }}
-                  />
-                </div>
-                <span className="w-8 shrink-0 text-right font-mono tabular-nums text-muted-foreground">
-                  {d.count}
-                </span>
-              </li>
-            ))}
-            {mostRequested.arr.length === 0 && (
-              <li className="text-xs text-muted-foreground">No calls yet.</li>
-            )}
-          </ul>
+      {/* Usage — single combined list */}
+      <div className="border-b border-border bg-background px-6 py-5">
+        <div className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          Usage
         </div>
-        <div className="bg-background px-6 py-5">
-          <div className="mb-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Never requested
-          </div>
-          <ul className="space-y-1.5">
-            {neverRequested.map((d) => (
-              <li key={d.id} className="flex items-center justify-between gap-3 text-xs">
-                <span className="truncate">{d.name}</span>
-                <button
-                  className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 ring-1 ring-amber-500/20 transition-colors hover:bg-amber-500/20 dark:text-amber-400"
-                  onClick={() => {
-                    if (aliasSugs.some((s) => s.definitionId === d.id)) return;
-                    setAliasSugs((prev) => [...prev, suggestAliases(d)]);
-                  }}
-                  title="See why — and suggested aliases"
-                >
-                  See why
-                </button>
-              </li>
-            ))}
-            {neverRequested.length === 0 && (
-              <li className="text-xs text-muted-foreground">
-                Every served definition has been called at least once.
-              </li>
-            )}
-          </ul>
-          {neverRequested.length > 0 && (
-            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-              Consider renaming or checking if agents can find these definitions.
-            </p>
+        <ul className="space-y-1.5">
+          {mostRequested.arr.map((d) => (
+            <li key={d.name} className="flex items-center gap-3 text-xs">
+              <span className="w-44 shrink-0 truncate">{d.name}</span>
+              <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full bg-primary/70"
+                  style={{ width: `${(d.count / mostRequested.max) * 100}%` }}
+                />
+              </div>
+              <span className="w-8 shrink-0 text-right font-mono tabular-nums text-muted-foreground">
+                {d.count}
+              </span>
+            </li>
+          ))}
+          {neverRequested.map((d) => (
+            <li key={d.id} className="flex items-center gap-3 text-xs">
+              <span className="w-44 shrink-0 truncate text-muted-foreground">{d.name}</span>
+              <div className="flex-1" />
+              <button
+                className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 ring-1 ring-amber-500/20 transition-colors hover:bg-amber-500/20 dark:text-amber-400"
+                onClick={() => {
+                  if (aliasSugs.some((s) => s.definitionId === d.id)) return;
+                  setAliasSugs((prev) => [...prev, suggestAliases(d)]);
+                }}
+              >
+                Unused — see why
+              </button>
+            </li>
+          ))}
+          {mostRequested.arr.length === 0 && neverRequested.length === 0 && (
+            <li className="text-xs text-muted-foreground">No calls yet.</li>
           )}
-        </div>
+        </ul>
       </div>
+
 
       {/* Section 4 — Activity log */}
       <div className="flex flex-wrap items-center gap-2 px-6 py-3">

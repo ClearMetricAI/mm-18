@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Select,
   SelectContent,
@@ -37,7 +37,7 @@ import {
   ChevronDown,
   MoreHorizontal,
   Info,
-  Gavel,
+  
 } from "lucide-react";
 
 import { useEffect, useMemo, useState } from "react";
@@ -71,7 +71,7 @@ function ExperimentPage() {
   const [editingQ, setEditingQ] = useState<string | null>(null);
   const [model, setModel] = useState(availableModels[0]);
   const [running, setRunning] = useState<string | null>(null);
-  const [showAbout, setShowAbout] = useState(false);
+  // about-strip removed for simplicity
   const [questionSuggestions, setQuestionSuggestions] = useState<TestQuestionSuggestion[]>([]);
   const [dismissedSugs, setDismissedSugs] = useState<Set<string>>(new Set());
 
@@ -220,30 +220,8 @@ function ExperimentPage() {
         <main className="flex flex-1 min-w-0 flex-col">
           {/* Slim header — name only + actions */}
           <div className="flex h-14 items-center justify-between border-b border-border px-6">
-            <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate text-sm font-semibold">{def.name}</h1>
-              <button
-                onClick={() => setShowAbout((v) => !v)}
-                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                title="About this metric"
-              >
-                <Info className="h-3.5 w-3.5" />
-              </button>
-            </div>
+            <h1 className="truncate text-sm font-semibold">{def.name}</h1>
             <div className="flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="hidden items-center gap-1.5 rounded-md border border-border px-2 py-1 text-[10px] text-muted-foreground md:flex">
-                    <Gavel className="h-3 w-3" />
-                    Judge: <span className="font-mono text-foreground">{judgeModel}</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[280px] text-xs">
-                  Each criterion is graded yes/no by an LLM judge with a one-line reason.
-                  Baseline = LLM with schema metadata only (what Copilot sees today). ClearMetric
-                  = same model + the governed definition.
-                </TooltipContent>
-              </Tooltip>
               <Select value={model} onValueChange={setModel}>
                 <SelectTrigger className="h-7 w-[150px] text-xs">
                   <SelectValue />
@@ -256,22 +234,6 @@ function ExperimentPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs"
-                onClick={() => {
-                  const fresh = suggestTestQuestions(def).map((s) => ({
-                    ...s,
-                    id: `${s.id}_${def.id}`,
-                  }));
-                  setQuestionSuggestions((prev) => [...prev, ...fresh]);
-                  toast.success(`${fresh.length} more suggestions`);
-                }}
-              >
-                <Sparkles className="mr-1 h-3.5 w-3.5" />
-                Suggest more
-              </Button>
               <Button size="sm" className="h-7 text-xs" onClick={runAll} disabled={running === "all"}>
                 {running === "all" ? (
                   <RotateCw className="mr-1 h-3.5 w-3.5 animate-spin" />
@@ -283,22 +245,7 @@ function ExperimentPage() {
             </div>
           </div>
 
-          {/* Collapsible about strip */}
-          {showAbout && (
-            <div className="border-b border-border bg-muted/20 px-6 py-3">
-              <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                <Badge variant="secondary" className="text-[10px] font-normal">
-                  {def.domain}
-                </Badge>
-                <span>Owner: <span className="text-foreground">{def.owner}</span></span>
-                <span>·</span>
-                <span>Source: <span className="text-foreground">{def.source}</span></span>
-                <span>·</span>
-                <span>{def.status === "tested" ? "Tested" : "Draft"}</span>
-              </div>
-              <p className="mt-2 text-xs leading-relaxed text-foreground/80">{def.description}</p>
-            </div>
-          )}
+
 
 
 
