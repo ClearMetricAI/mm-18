@@ -227,6 +227,30 @@ function DefinePage() {
 
         {tab === "library" && (
           <div className="pt-4">
+            {activeView && (
+              <div className="mb-3 flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-xs">
+                <span className="font-medium">{activeView.name}</span>
+                <span className="text-muted-foreground">
+                  {approved.length} of {defs.length}
+                </span>
+                <div className="ml-auto flex items-center gap-0.5">
+                  <button
+                    onClick={() => setEditorOpen(true)}
+                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    title="Edit view"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={() => navigate({ to: "/define", search: {} })}
+                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    title="Clear view"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="mb-2 flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
