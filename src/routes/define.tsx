@@ -61,6 +61,15 @@ function DefinePage() {
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
+  // Engine-produced suggestions queue. Seeded from current defs; dismissable.
+  const [suggestions, setSuggestions] = useState<Suggestion[]>(() => [
+    ...suggestDefinitionDrafts(),
+    ...suggestDriftAlerts(seedDefs),
+    ...suggestImprovements(seedDefs),
+  ]);
+  const dismissSuggestion = (id: string) =>
+    setSuggestions((prev) => prev.filter((s) => s.id !== id));
+
   const runDraft = async (def: Definition, field: "description" | "formula") => {
     setDrafting(field);
     const next = await draftField(def, field);
