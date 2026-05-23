@@ -360,6 +360,16 @@ function DefinePage() {
           </div>
         )}
       </div>
+      <ViewEditor
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        defs={defs}
+        initial={activeView}
+        onSave={(v) => {
+          upsertView(v);
+          navigate({ to: "/define", search: { view: v.id } });
+        }}
+      />
     </div>
   );
 }
