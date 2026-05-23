@@ -92,28 +92,45 @@ function DefinePage() {
     setOpenId(id);
   };
 
+  const inView = Boolean(activeView);
+
   return (
     <div className="mx-auto flex h-screen max-w-3xl flex-col">
       <header className="px-6 pb-2 pt-8">
-        <h1 className="text-xl font-semibold">Definitions</h1>
-        <div className="mt-4 flex items-center gap-1 border-b border-border">
-          <TabBtn active={tab === "inbox"} onClick={() => setTab("inbox")}>
-            Inbox
-            {suggestions.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                {suggestions.length}
-              </span>
-            )}
-          </TabBtn>
-          <TabBtn active={tab === "library"} onClick={() => setTab("library")}>
-            Library
-            <span className="ml-1.5 text-[10px] text-muted-foreground">{defs.length}</span>
-          </TabBtn>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold">
+            {activeView ? activeView.name : "Definitions"}
+          </h1>
+          {activeView && (
+            <button
+              onClick={() => navigate({ to: "/define", search: {} })}
+              className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+              title="Exit view"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
+        {!inView && (
+          <div className="mt-4 flex items-center gap-1 border-b border-border">
+            <TabBtn active={tab === "inbox"} onClick={() => setTab("inbox")}>
+              Inbox
+              {suggestions.length > 0 && (
+                <span className="ml-1.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                  {suggestions.length}
+                </span>
+              )}
+            </TabBtn>
+            <TabBtn active={tab === "library"} onClick={() => setTab("library")}>
+              Library
+              <span className="ml-1.5 text-[10px] text-muted-foreground">{defs.length}</span>
+            </TabBtn>
+          </div>
+        )}
       </header>
 
       <div className="flex-1 overflow-y-auto px-6 pb-16">
-        {tab === "inbox" && (
+        {!inView && tab === "inbox" && (
           <div className="space-y-6 pt-4">
             {drifts.length > 0 && (
               <SectionGroup
@@ -225,30 +242,20 @@ function DefinePage() {
           </div>
         )}
 
-        {tab === "library" && (
+        {(inView || tab === "library") && (
           <div className="pt-4">
             {activeView && (
-              <div className="mb-3 flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-1.5 text-xs">
-                <span className="font-medium">{activeView.name}</span>
-                <span className="text-muted-foreground">
+              <div className="mb-3 flex items-center justify-between text-xs text-muted-foreground">
+                <span>
                   {approved.length} of {defs.length}
                 </span>
-                <div className="ml-auto flex items-center gap-0.5">
-                  <button
-                    onClick={() => setEditorOpen(true)}
-                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                    title="Edit view"
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => navigate({ to: "/define", search: {} })}
-                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                    title="Clear view"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setEditorOpen(true)}
+                  className="rounded p-1 hover:bg-accent hover:text-foreground"
+                  title="Edit filters"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
               </div>
             )}
             <div className="mb-2 flex items-center gap-2">
