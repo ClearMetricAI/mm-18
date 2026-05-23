@@ -7,21 +7,24 @@ export interface Definition {
   formula: string;
   owner: string;
   source: string;
+  domain: string; // Finance, Product, Sales, CS, Growth, Marketing
   usedIn: string[];
   confirmedAt: string | null;
   status: DefStatus;
   serveToAi: boolean;
 }
 
-export const definitions: Definition[] = [
+// Base hand-written definitions (the curated, high-quality ones).
+const base: Definition[] = [
   {
     id: "def_net_revenue",
     name: "Net Revenue",
     description:
       "Subscription revenue recognized in the period, excluding professional services, one-time fees, and refunds. Reported on a net ARR basis.",
     formula: "SUM(invoice_lines.amount) WHERE type = 'subscription' AND status = 'paid' - refunds",
-    owner: "Sarah Chen, Finance",
-    source: "Contoso Power BI Workspace",
+    owner: "Sarah Chen",
+    source: "Power BI / Finance",
+    domain: "Finance",
     usedIn: ["Finance Weekly", "Board Deck Q4", "ARR Dashboard"],
     confirmedAt: "2025-05-10",
     status: "tested",
@@ -33,10 +36,38 @@ export const definitions: Definition[] = [
     description:
       "Monthly Recurring Revenue. Sum of all active subscription contract values, normalized to a monthly cadence. Excludes professional services.",
     formula: "SUM(subscriptions.mrr) WHERE status = 'active'",
-    owner: "Sarah Chen, Finance",
-    source: "Contoso Power BI Workspace",
+    owner: "Sarah Chen",
+    source: "Power BI / Finance",
+    domain: "Finance",
     usedIn: ["Finance Weekly", "Investor Update"],
     confirmedAt: "2025-04-22",
+    status: "tested",
+    serveToAi: true,
+  },
+  {
+    id: "def_arr",
+    name: "ARR",
+    description: "Annual Recurring Revenue. MRR × 12 across active subscriptions on the snapshot date.",
+    formula: "MRR * 12",
+    owner: "Sarah Chen",
+    source: "Power BI / Finance",
+    domain: "Finance",
+    usedIn: ["Board Deck Q4", "Investor Update"],
+    confirmedAt: "2025-05-12",
+    status: "tested",
+    serveToAi: true,
+  },
+  {
+    id: "def_gross_margin",
+    name: "Gross Margin",
+    description:
+      "Revenue minus cost of revenue (hosting, support, third-party API costs), divided by revenue. Reported as a percentage.",
+    formula: "(revenue - cogs) / revenue",
+    owner: "Sarah Chen",
+    source: "Manual",
+    domain: "Finance",
+    usedIn: ["Finance Weekly", "Board Deck Q4"],
+    confirmedAt: "2025-04-12",
     status: "tested",
     serveToAi: true,
   },
@@ -46,8 +77,9 @@ export const definitions: Definition[] = [
     description:
       "Percentage of customers (accounts) that cancelled in the period, divided by customers at the start of the period. Not weighted by revenue.",
     formula: "COUNT(churned_accounts) / COUNT(active_accounts_start_of_period)",
-    owner: "Marcus Liu, CS",
-    source: "Contoso Power BI Workspace",
+    owner: "Marcus Liu",
+    source: "Power BI / CS",
+    domain: "Customer Success",
     usedIn: ["Retention Dashboard", "QBR Template"],
     confirmedAt: "2025-05-01",
     status: "tested",
@@ -59,10 +91,25 @@ export const definitions: Definition[] = [
     description:
       "Lost MRR from cancellations and downgrades in the period, divided by MRR at the start of the period. Excludes new business and expansion.",
     formula: "(churned_mrr + downgrade_mrr) / starting_mrr",
-    owner: "Marcus Liu, CS",
-    source: "Contoso Power BI Workspace",
+    owner: "Marcus Liu",
+    source: "Power BI / CS",
+    domain: "Customer Success",
     usedIn: ["Retention Dashboard"],
     confirmedAt: "2025-04-18",
+    status: "tested",
+    serveToAi: true,
+  },
+  {
+    id: "def_nrr",
+    name: "Net Revenue Retention",
+    description:
+      "Starting MRR plus expansion, minus churn and downgrades, divided by starting MRR. Cohort-based on customers active at period start.",
+    formula: "(starting_mrr + expansion - churn - downgrade) / starting_mrr",
+    owner: "Marcus Liu",
+    source: "Power BI / CS",
+    domain: "Customer Success",
+    usedIn: ["Board Deck Q4", "Retention Dashboard"],
+    confirmedAt: "2025-05-03",
     status: "tested",
     serveToAi: true,
   },
@@ -72,12 +119,26 @@ export const definitions: Definition[] = [
     description:
       "Monthly Active Users. Distinct users with at least one qualifying event in the trailing 30 days. Excludes internal users and bots.",
     formula: "COUNT(DISTINCT user_id) WHERE event_ts >= NOW() - INTERVAL '30 days' AND is_internal = false",
-    owner: "Priya Patel, Product",
-    source: "Snowflake / events",
+    owner: "Priya Patel",
+    source: "Snowflake / Events",
+    domain: "Product",
     usedIn: ["Product Health", "Growth Review"],
     confirmedAt: null,
     status: "draft",
     serveToAi: false,
+  },
+  {
+    id: "def_dau",
+    name: "DAU",
+    description: "Daily Active Users. Distinct non-internal users with at least one qualifying event on a given calendar day (UTC).",
+    formula: "COUNT(DISTINCT user_id) WHERE event_date = TODAY AND is_internal = false",
+    owner: "Priya Patel",
+    source: "Snowflake / Events",
+    domain: "Product",
+    usedIn: ["Product Health"],
+    confirmedAt: "2025-05-09",
+    status: "tested",
+    serveToAi: true,
   },
   {
     id: "def_cac",
@@ -85,23 +146,24 @@ export const definitions: Definition[] = [
     description:
       "Customer Acquisition Cost. Fully-loaded sales and marketing spend in the period, divided by new customers acquired in the same period.",
     formula: "(sales_spend + marketing_spend) / new_customers",
-    owner: "Dana Wells, Growth",
+    owner: "Dana Wells",
     source: "Manual",
+    domain: "Growth",
     usedIn: ["Growth Review", "Board Deck Q4"],
     confirmedAt: "2025-03-30",
     status: "tested",
     serveToAi: true,
   },
   {
-    id: "def_gross_margin",
-    name: "Gross Margin",
-    description:
-      "Revenue minus cost of revenue (hosting, support, third-party API costs), divided by revenue. Reported as a percentage.",
-    formula: "(revenue - cogs) / revenue",
-    owner: "Sarah Chen, Finance",
+    id: "def_ltv",
+    name: "LTV",
+    description: "Customer Lifetime Value. Average revenue per account × gross margin / monthly logo churn rate.",
+    formula: "(ARPA * gross_margin) / monthly_logo_churn",
+    owner: "Dana Wells",
     source: "Manual",
-    usedIn: ["Finance Weekly", "Board Deck Q4"],
-    confirmedAt: "2025-04-12",
+    domain: "Growth",
+    usedIn: ["Growth Review"],
+    confirmedAt: "2025-04-02",
     status: "tested",
     serveToAi: true,
   },
@@ -110,8 +172,9 @@ export const definitions: Definition[] = [
     name: "NPS",
     description: "Net Promoter Score. % Promoters (9-10) minus % Detractors (0-6) from the trailing 90-day survey window.",
     formula: "(promoters - detractors) / total_responses * 100",
-    owner: "Marcus Liu, CS",
+    owner: "Marcus Liu",
     source: "Manual",
+    domain: "Customer Success",
     usedIn: ["CS Weekly"],
     confirmedAt: null,
     status: "draft",
@@ -123,27 +186,107 @@ export const definitions: Definition[] = [
     description:
       "Sum of open opportunity ACV at Stage 2 (Discovery) or later. Excludes Closed Lost and opportunities older than 180 days.",
     formula: "SUM(opp.acv) WHERE stage >= 2 AND status = 'open' AND age_days < 180",
-    owner: "Tom Reyes, Sales",
+    owner: "Tom Reyes",
     source: "Salesforce",
+    domain: "Sales",
     usedIn: ["Sales Forecast"],
     confirmedAt: "2025-05-15",
     status: "tested",
     serveToAi: true,
   },
   {
+    id: "def_win_rate",
+    name: "Win Rate",
+    description: "Closed Won opportunities divided by all closed opportunities (Won + Lost) in the period.",
+    formula: "COUNT(opp WHERE stage = 'Won') / COUNT(opp WHERE stage IN ('Won','Lost'))",
+    owner: "Tom Reyes",
+    source: "Salesforce",
+    domain: "Sales",
+    usedIn: ["Sales Forecast", "QBR Template"],
+    confirmedAt: "2025-04-28",
+    status: "tested",
+    serveToAi: true,
+  },
+  {
     id: "def_active_customer",
     name: "Active Customer",
-    description:
-      "An account with at least one paid subscription that has not entered a cancelled or suspended state.",
+    description: "An account with at least one paid subscription that has not entered a cancelled or suspended state.",
     formula: "accounts WHERE has_active_subscription = true",
-    owner: "Marcus Liu, CS",
-    source: "Contoso Power BI Workspace",
+    owner: "Marcus Liu",
+    source: "Power BI / CS",
+    domain: "Customer Success",
     usedIn: ["Retention Dashboard", "QBR Template"],
     confirmedAt: "2025-05-08",
     status: "tested",
     serveToAi: true,
   },
+  {
+    id: "def_payback",
+    name: "CAC Payback",
+    description: "Months required to recoup CAC, defined as CAC divided by (ARPA × gross margin).",
+    formula: "CAC / (ARPA * gross_margin)",
+    owner: "Dana Wells",
+    source: "Manual",
+    domain: "Growth",
+    usedIn: ["Board Deck Q4"],
+    confirmedAt: null,
+    status: "draft",
+    serveToAi: false,
+  },
+  {
+    id: "def_activation",
+    name: "Activation Rate",
+    description: "Percent of new signups who complete the activation event (first published report) within 7 days.",
+    formula: "COUNT(activated_users) / COUNT(signups) WHERE signup_age <= 7d",
+    owner: "Priya Patel",
+    source: "Snowflake / Events",
+    domain: "Product",
+    usedIn: ["Product Health", "Growth Review"],
+    confirmedAt: "2025-05-04",
+    status: "tested",
+    serveToAi: true,
+  },
 ];
+
+// Synthetic filler so the table demonstrates scale. Deterministic — no Math.random/Date.now.
+const fillerDomains = ["Finance", "Product", "Sales", "Customer Success", "Growth", "Marketing"];
+const fillerOwners = ["Sarah Chen", "Marcus Liu", "Priya Patel", "Tom Reyes", "Dana Wells", "Alex Kim"];
+const fillerSources = ["Power BI / Finance", "Snowflake / Events", "Salesforce", "Manual", "Power BI / CS"];
+
+const fillerNames = [
+  "Trial-to-Paid Rate", "Avg Deal Size", "Sales Cycle Length", "Free Tier Conversion",
+  "Expansion MRR", "Downgrade MRR", "Bookings", "Billings", "Deferred Revenue", "Backlog",
+  "Cohort Retention M3", "Cohort Retention M6", "Cohort Retention M12", "Feature Adoption",
+  "Time to First Value", "Stickiness (DAU/MAU)", "Avg Session Length", "Sessions per User",
+  "Support Ticket Volume", "First Response Time", "CSAT", "Time to Resolution",
+  "Marketing Qualified Leads", "Sales Qualified Leads", "Email Open Rate", "Email CTR",
+  "Webinar Attendance", "Demo Booked Rate", "Demo Show Rate", "Inbound Pipeline",
+  "Outbound Pipeline", "Pipeline Coverage", "Forecast Accuracy", "Quota Attainment",
+  "Rep Productivity", "Net New ARR", "Gross New ARR", "Expansion ARR", "Churned ARR",
+  "Magic Number", "Burn Multiple", "Runway Months", "Cash Conversion Score",
+];
+
+const filler: Definition[] = fillerNames.map((name, i) => {
+  const owner = fillerOwners[i % fillerOwners.length];
+  const domain = fillerDomains[i % fillerDomains.length];
+  const source = fillerSources[i % fillerSources.length];
+  const tested = i % 3 !== 0;
+  return {
+    id: `def_filler_${i}`,
+    name,
+    description: `${name} — definition synced from ${source}. Review pending.`,
+    formula: `-- ${name.toLowerCase().replace(/\s+/g, "_")} pending`,
+    owner,
+    source,
+    domain,
+    usedIn: i % 2 === 0 ? ["Finance Weekly"] : ["Board Deck Q4", "QBR Template"],
+    confirmedAt: tested ? `2025-0${(i % 5) + 1}-${10 + (i % 18)}` : null,
+    status: tested ? "tested" : "draft",
+    serveToAi: i % 4 !== 0,
+  };
+});
+
+export const definitions: Definition[] = [...base, ...filler];
 
 export interface TestQuestion {
   id: string;
@@ -174,8 +317,7 @@ export const testQuestions: TestQuestion[] = [
     definitionId: "def_net_revenue",
     question: "How is Net Revenue calculated?",
     criteria: ["Must reference subscription invoice lines", "Must subtract refunds", "Must mention paid status"],
-    baselineResponse:
-      "Net Revenue is gross revenue minus discounts, returns, and allowances.",
+    baselineResponse: "Net Revenue is gross revenue minus discounts, returns, and allowances.",
     cmResponse:
       "Net Revenue = SUM of paid subscription invoice lines for the period, minus refunds. Only invoices with status = 'paid' and type = 'subscription' are included.",
     baselinePass: [false, false, false],
@@ -184,11 +326,11 @@ export const testQuestions: TestQuestion[] = [
   {
     id: "q3",
     definitionId: "def_net_revenue",
-    question: "Is Net Revenue the same as MRR x 12?",
+    question: "Is Net Revenue the same as MRR × 12?",
     criteria: ["Must say no", "Must explain MRR is recurring while net revenue is recognized"],
     baselineResponse: "Yes, you can approximate annual revenue by multiplying MRR by 12.",
     cmResponse:
-      "No. MRR x 12 is an annualized run-rate of active subscriptions. Net Revenue is the revenue actually recognized in the period from paid subscription invoices minus refunds.",
+      "No. MRR × 12 is an annualized run-rate of active subscriptions. Net Revenue is the revenue actually recognized in the period from paid subscription invoices minus refunds.",
     baselinePass: [false, false],
     cmPass: [true, true],
   },
@@ -246,20 +388,24 @@ export interface ActivityEntry {
   latencyMs: number;
 }
 
+// Deterministic: derived from a fixed reference timestamp so SSR & client match.
+const REF_TS = Date.parse("2025-05-23T14:00:00Z");
 const agents = ["Copilot Studio", "Claude MCP", "Custom Agent", "Cursor"];
 const tools: ActivityEntry["tool"][] = ["search_definitions", "get_definition", "get_lineage", "get_impact"];
+const inputs = ["what is revenue", "churn definition", "MRR calculation", "active customer", "CAC formula"];
+const latencies = [62, 88, 104, 71, 145, 53, 91, 116, 78, 132];
 
 export const activityLog: ActivityEntry[] = Array.from({ length: 42 }, (_, i) => {
   const def = definitions[i % definitions.length];
-  const minutesAgo = i * 7 + Math.floor(Math.random() * 5);
+  const minutesAgo = i * 7 + (i % 5);
   return {
     id: `act_${i}`,
-    ts: new Date(Date.now() - minutesAgo * 60_000).toISOString(),
+    ts: new Date(REF_TS - minutesAgo * 60_000).toISOString(),
     agent: agents[i % agents.length],
     tool: tools[i % tools.length],
-    input: ["what is revenue", "churn definition", "MRR calculation", "active customer", "CAC formula"][i % 5],
+    input: inputs[i % inputs.length],
     definitionName: def.name,
-    latencyMs: 40 + Math.floor(Math.random() * 180),
+    latencyMs: latencies[i % latencies.length],
   };
 });
 
@@ -294,3 +440,5 @@ export const llmKeys = [
   { id: "k1", provider: "OpenAI", model: "gpt-4o", status: "valid" as const, added: "2025-03-12" },
   { id: "k2", provider: "Anthropic", model: "claude-sonnet-4", status: "valid" as const, added: "2025-04-02" },
 ];
+
+export const availableModels = ["gpt-4o", "gpt-4o-mini", "claude-sonnet-4", "claude-opus-4"];
