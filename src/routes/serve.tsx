@@ -7,14 +7,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useMemo, useState } from "react";
 import { activityLog, REF_TS } from "@/lib/mock-data";
+import { ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/serve")({ component: ServePage });
 
@@ -28,75 +23,141 @@ function relTime(iso: string) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+type GroupBy = "none" | "agent" | "user";
+
 function ServePage() {
+  const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [agent, setAgent] = useState("all");
+  const [user, setUser] = useState("all");
+  const [expanded, setExpanded] = useState<string | null>(null);
+
   const agents = useMemo(() => Array.from(new Set(activityLog.map((a) => a.agent))), []);
-  const filtered = activityLog.filter((a) => agent === "all" || a.agent === agent);
+  const users = useMemo(() => Array.from(new Set(activityLog.map((a) => a.user))), []);
+
+  const filtered = activityLog.filter(
+    (a) => (agent === "all" || a.agent === agent) && (user === "all" || a.user === user),
+  );
 
   const p50 = useMemo(() => {
     const sorted = [...activityLog.map((a) => a.latencyMs)].sort((a, b) => a - b);
     return sorted[Math.floor(sorted.length / 2)];
   }, []);
 
+  const grouped = useMemo(() => {
+    if (groupBy === "none") return [{ key: "", items: filtered }];
+    const map = new Map<string, typeof filtered>();
+    for (const a of filtered) {
+      const k = groupBy === "agent" ? a.agent : a.user;
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(a);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].length - a[1].length)
+      .map(([key, items]) => ({ key, items }));
+  }, [filtered, groupBy]);
+
   return (
-    <TooltipProvider delayDuration={150}>
-      <div className="flex h-screen flex-col">
-        <PageHeader title="Serve" />
+    <div className="flex h-screen flex-col">
+      <PageHeader title="Serve" />
 
-        {/* Pulse */}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border px-6 py-3 text-xs">
-          <span className="flex items-center gap-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--success)] opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--success)]" />
-            </span>
-            <span className="font-medium">Live</span>
+      {/* Pulse */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border px-6 py-3 text-xs">
+        <span className="flex items-center gap-1.5">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--success)] opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--success)]" />
           </span>
-          <Stat value={activityLog.length} label="calls this week" />
-          <Stat value={agents.length} label="agents" />
-          <Stat value={`${p50}ms`} label="p50 latency" />
-        </div>
+          <span className="font-medium">Live</span>
+        </span>
+        <Stat value={activityLog.length} label="calls this week" />
+        <Stat value={users.length} label="users" />
+        <Stat value={agents.length} label="agents" />
+        <Stat value={`${p50}ms`} label="p50 latency" />
+      </div>
 
-        {/* Activity */}
-        <div className="flex items-center gap-2 px-6 py-3">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Recent activity
-          </span>
-          <div className="ml-auto">
-            <Select value={agent} onValueChange={setAgent}>
-              <SelectTrigger className="h-7 w-[160px] text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All agents</SelectItem>
-                {agents.map((a) => (
-                  <SelectItem key={a} value={a}>
-                    {a}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-6 pb-8">
-          {filtered.map((a) => (
-            <Tooltip key={a.id}>
-              <TooltipTrigger asChild>
-                <div className="grid cursor-default grid-cols-[80px_1fr_180px] items-center gap-3 border-b border-border/60 px-2 py-1.5 text-sm transition-colors hover:bg-accent/50">
-                  <span className="text-xs text-muted-foreground">{relTime(a.ts)}</span>
-                  <span className="truncate text-muted-foreground">"{a.input}"</span>
-                  <span className="truncate">{a.definitionName ?? "—"}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                {a.agent} · <span className="font-mono">{a.tool}</span> · {a.latencyMs}ms
-              </TooltipContent>
-            </Tooltip>
-          ))}
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2 px-6 py-3">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          Recent activity
+        </span>
+        <div className="ml-auto flex items-center gap-2">
+          <FilterSelect label="Group" value={groupBy} onChange={(v) => setGroupBy(v as GroupBy)} options={[
+            { value: "none", label: "No grouping" },
+            { value: "user", label: "By user" },
+            { value: "agent", label: "By agent" },
+          ]} />
+          <FilterSelect label="User" value={user} onChange={setUser} options={[
+            { value: "all", label: "All users" },
+            ...users.map((u) => ({ value: u, label: u })),
+          ]} />
+          <FilterSelect label="Agent" value={agent} onChange={setAgent} options={[
+            { value: "all", label: "All agents" },
+            ...agents.map((a) => ({ value: a, label: a })),
+          ]} />
         </div>
       </div>
-    </TooltipProvider>
+
+      <div className="flex-1 overflow-y-auto px-6 pb-8">
+        {grouped.map((g) => (
+          <div key={g.key || "all"} className="mb-4">
+            {g.key && (
+              <div className="sticky top-0 z-10 flex items-center gap-2 bg-background/95 py-1.5 text-[11px] font-medium text-muted-foreground backdrop-blur">
+                <span>{g.key}</span>
+                <span className="text-muted-foreground/60">· {g.items.length}</span>
+              </div>
+            )}
+            {g.items.map((a) => {
+              const open = expanded === a.id;
+              return (
+                <div key={a.id} className="border-b border-border/60">
+                  <button
+                    onClick={() => setExpanded(open ? null : a.id)}
+                    className="grid w-full cursor-pointer grid-cols-[16px_72px_160px_1fr_160px_56px] items-center gap-3 px-2 py-2 text-left text-sm transition-colors hover:bg-accent/50"
+                  >
+                    <ChevronRight
+                      className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`}
+                    />
+                    <span className="text-xs text-muted-foreground">{relTime(a.ts)}</span>
+                    <span className="truncate text-xs text-muted-foreground">{a.user}</span>
+                    <span className="truncate">"{a.input}"</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {a.agent}
+                    </span>
+                    <span className="text-right text-xs tabular-nums text-muted-foreground">
+                      {a.latencyMs}ms
+                    </span>
+                  </button>
+                  {open && (
+                    <div className="grid grid-cols-[16px_1fr] gap-3 bg-muted/30 px-2 pb-4 pt-2 text-xs">
+                      <div />
+                      <div className="space-y-3">
+                        <Meta items={[
+                          ["Definition served", a.definitionName ?? "— no match —"],
+                          ["Tool called", a.tool],
+                          ["Agent", a.agent],
+                          ["User", a.user],
+                        ]} />
+                        <div>
+                          <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                            Response returned to agent
+                          </div>
+                          <pre className="whitespace-pre-wrap rounded border border-border bg-background p-3 font-mono text-[11px] leading-relaxed">
+{a.response}
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div className="py-12 text-center text-sm text-muted-foreground">No activity matches these filters.</div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -106,5 +167,48 @@ function Stat({ value, label }: { value: string | number; label: string }) {
       <span className="font-mono text-sm font-semibold tabular-nums">{value}</span>
       <span className="text-muted-foreground">{label}</span>
     </span>
+  );
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="h-7 w-[180px] text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value} className="text-xs">
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function Meta({ items }: { items: [string, string][] }) {
+  return (
+    <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+      {items.map(([k, v]) => (
+        <div key={k} className="flex gap-2">
+          <span className="w-32 shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground">{k}</span>
+          <span className="truncate font-mono text-[11px]">{v}</span>
+        </div>
+      ))}
+    </div>
   );
 }
