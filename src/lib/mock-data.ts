@@ -469,30 +469,57 @@ export const testQuestions: TestQuestion[] = [
 export interface ActivityEntry {
   id: string;
   ts: string;
+  user: string;
   agent: string;
   tool: "search_definitions" | "get_definition" | "get_lineage" | "get_impact" | "search_assets" | "get_asset";
   input: string;
   definitionName: string | null;
+  response: string;
   latencyMs: number;
 }
 
 // Deterministic: derived from a fixed reference timestamp so SSR & client match.
 export const REF_TS = Date.parse("2025-05-23T14:00:00Z");
-const agents = ["Copilot Studio", "Claude MCP", "Custom Agent", "Cursor"];
+const agentsList = ["Copilot Studio", "Claude MCP", "Custom Agent", "Cursor"];
+const usersList = [
+  "sarah.chen@contoso.com",
+  "marcus.liu@contoso.com",
+  "priya.patel@contoso.com",
+  "tom.reyes@contoso.com",
+  "dana.wells@contoso.com",
+  "alex.kim@contoso.com",
+];
 const tools: ActivityEntry["tool"][] = ["search_definitions", "get_definition", "get_lineage", "get_impact"];
-const inputs = ["what is revenue", "churn definition", "MRR calculation", "active customer", "CAC formula"];
+const inputs = [
+  "what is revenue",
+  "how is churn calculated",
+  "MRR vs ARR difference",
+  "what counts as an active customer",
+  "CAC formula and what's included",
+  "does revenue include professional services",
+  "NRR cohort definition",
+  "are internal users in MAU",
+];
 const latencies = [62, 88, 104, 71, 145, 53, 91, 116, 78, 132];
+
+function buildResponse(def: Definition | undefined, input: string) {
+  if (!def) return `No served definition matched "${input}". Returned 0 results.`;
+  return `${def.name} — ${def.description}\n\nFormula: ${def.formula}\nOwner: ${def.owner} · Source: ${def.source}`;
+}
 
 export const activityLog: ActivityEntry[] = Array.from({ length: 42 }, (_, i) => {
   const def = definitions[i % definitions.length];
   const minutesAgo = i * 7 + (i % 5);
+  const input = inputs[i % inputs.length];
   return {
     id: `act_${i}`,
     ts: new Date(REF_TS - minutesAgo * 60_000).toISOString(),
-    agent: agents[i % agents.length],
+    user: usersList[i % usersList.length],
+    agent: agentsList[i % agentsList.length],
     tool: tools[i % tools.length],
-    input: inputs[i % inputs.length],
+    input,
     definitionName: def.name,
+    response: buildResponse(def, input),
     latencyMs: latencies[i % latencies.length],
   };
 });
