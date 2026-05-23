@@ -40,7 +40,7 @@ export const ROLES: { id: Role; name: string; blurb: string }[] = [
 ];
 
 export function canSeeBilling(role: Role): boolean {
-  return role === "owner" || role === "admin";
+  return role === "owner" || role === "editor";
 }
 
 const KEY_SCENARIO = "clearmetric:billing-scenario";
