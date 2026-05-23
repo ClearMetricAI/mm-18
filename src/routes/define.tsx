@@ -1,213 +1,442 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { PageHeader } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search, Plus, ChevronRight, Share2, FlaskConical, Pencil } from "lucide-react";
-import { useMemo, useState } from "react";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  Search,
+  Plus,
+  Share2,
+  FlaskConical,
+  Pencil,
+  ChevronDown,
+  Filter,
+  Users,
+  Database,
+  Layers,
+  X,
+  Sparkles,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { definitions as seedDefs, type Definition } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/define")({ component: DefinePage });
 
+type GroupBy = "none" | "domain" | "owner" | "source" | "status";
+
 function DefinePage() {
   const navigate = useNavigate();
   const [defs, setDefs] = useState<Definition[]>(seedDefs);
   const [query, setQuery] = useState("");
-  const [owner, setOwner] = useState<string>("all");
-  const [served, setServed] = useState<string>("all");
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [owners, setOwners] = useState<Set<string>>(new Set());
+  const [domains, setDomains] = useState<Set<string>>(new Set());
+  const [servedOnly, setServedOnly] = useState(false);
+  const [draftOnly, setDraftOnly] = useState(false);
+  const [groupBy, setGroupBy] = useState<GroupBy>("domain");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const owners = useMemo(() => Array.from(new Set(seedDefs.map((d) => d.owner))), []);
+  // ⌘K to focus search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        document.getElementById("def-search")?.focus();
+      }
+      if (e.key === "Escape") setSelectedId(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const allOwners = useMemo(() => Array.from(new Set(seedDefs.map((d) => d.owner))).sort(), []);
+  const allDomains = useMemo(() => Array.from(new Set(seedDefs.map((d) => d.domain))).sort(), []);
 
   const filtered = defs.filter((d) => {
     const q = query.toLowerCase();
-    const matchesQ = !q || d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q);
-    const matchesOwner = owner === "all" || d.owner === owner;
-    const matchesServed =
-      served === "all" || (served === "served" ? d.serveToAi : !d.serveToAi);
-    return matchesQ && matchesOwner && matchesServed;
+    if (q && !d.name.toLowerCase().includes(q) && !d.description.toLowerCase().includes(q)) return false;
+    if (owners.size && !owners.has(d.owner)) return false;
+    if (domains.size && !domains.has(d.domain)) return false;
+    if (servedOnly && !d.serveToAi) return false;
+    if (draftOnly && d.status !== "draft") return false;
+    return true;
   });
 
-  const servedCount = defs.filter((d) => d.serveToAi).length;
+  const grouped = useMemo(() => {
+    if (groupBy === "none") return [{ key: "All", items: filtered }];
+    const map = new Map<string, Definition[]>();
+    for (const d of filtered) {
+      const k = (d as any)[groupBy] as string;
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(d);
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, items]) => ({ key, items }));
+  }, [filtered, groupBy]);
 
-  const toggleServe = (id: string) => {
+  const servedCount = defs.filter((d) => d.serveToAi).length;
+  const draftCount = defs.filter((d) => d.status === "draft").length;
+  const activeFilters = owners.size + domains.size + (servedOnly ? 1 : 0) + (draftOnly ? 1 : 0);
+
+  const toggleServe = (id: string) =>
     setDefs((prev) => prev.map((d) => (d.id === id ? { ...d, serveToAi: !d.serveToAi } : d)));
+
+  const toggleSet = (set: Set<string>, setSet: (s: Set<string>) => void, val: string) => {
+    const next = new Set(set);
+    next.has(val) ? next.delete(val) : next.add(val);
+    setSet(next);
   };
 
-  return (
-    <div>
-      <PageHeader
-        title="Define"
-        description="The shared dictionary of what every metric means."
-        actions={
-          <>
-            <Button variant="outline" size="sm">
-              <Share2 className="mr-1 h-3.5 w-3.5" />
-              Share
-            </Button>
-            <Button size="sm">
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              New
-            </Button>
-          </>
-        }
-      />
+  const selected = defs.find((d) => d.id === selectedId);
 
-      <div className="flex items-center gap-2 border-b border-border px-8 py-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+  return (
+    <div className="flex h-screen flex-col">
+      {/* Header */}
+      <div className="flex h-14 items-center justify-between border-b border-border px-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-sm font-semibold">Definitions</h1>
+          <span className="text-xs text-muted-foreground">
+            {filtered.length} of {defs.length} · {servedCount} served · {draftCount} draft
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Button variant="ghost" size="sm" className="h-7 text-xs">
+            <Share2 className="mr-1 h-3.5 w-3.5" />
+            Share
+          </Button>
+          <Button size="sm" className="h-7 text-xs">
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            New
+          </Button>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex h-11 items-center gap-1.5 border-b border-border bg-muted/20 px-6">
+        <div className="relative w-72">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
+            id="def-search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search definitions…"
-            className="h-8 pl-8 text-sm"
+            className="h-7 border-transparent bg-background pl-8 pr-12 text-xs shadow-none focus-visible:border-input"
           />
+          <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 select-none rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground md:inline-block">
+            ⌘K
+          </kbd>
         </div>
-        <Select value={owner} onValueChange={setOwner}>
-          <SelectTrigger className="h-8 w-[180px] text-xs">
-            <SelectValue placeholder="Owner" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All owners</SelectItem>
-            {owners.map((o) => (
-              <SelectItem key={o} value={o}>
-                {o}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={served} onValueChange={setServed}>
-          <SelectTrigger className="h-8 w-[140px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="served">Served</SelectItem>
-            <SelectItem value="not_served">Not served</SelectItem>
-          </SelectContent>
-        </Select>
 
-        <div className="ml-auto text-xs text-muted-foreground">
-          {defs.length} defs · {servedCount} served
+        <FilterMenu
+          icon={<Users className="h-3.5 w-3.5" />}
+          label="Owner"
+          count={owners.size}
+          options={allOwners}
+          selected={owners}
+          onToggle={(v) => toggleSet(owners, setOwners, v)}
+          onClear={() => setOwners(new Set())}
+        />
+        <FilterMenu
+          icon={<Layers className="h-3.5 w-3.5" />}
+          label="Domain"
+          count={domains.size}
+          options={allDomains}
+          selected={domains}
+          onToggle={(v) => toggleSet(domains, setDomains, v)}
+          onClear={() => setDomains(new Set())}
+        />
+
+        <Button
+          variant={servedOnly ? "secondary" : "ghost"}
+          size="sm"
+          className="h-7 gap-1 text-xs"
+          onClick={() => setServedOnly((v) => !v)}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          Served
+        </Button>
+        <Button
+          variant={draftOnly ? "secondary" : "ghost"}
+          size="sm"
+          className="h-7 gap-1 text-xs"
+          onClick={() => setDraftOnly((v) => !v)}
+        >
+          Draft
+        </Button>
+
+        {activeFilters > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 text-xs text-muted-foreground"
+            onClick={() => {
+              setOwners(new Set());
+              setDomains(new Set());
+              setServedOnly(false);
+              setDraftOnly(false);
+            }}
+          >
+            <X className="h-3 w-3" /> Clear
+          </Button>
+        )}
+
+        <div className="ml-auto flex items-center gap-1.5">
+          <span className="text-[11px] text-muted-foreground">Group by</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                {groupBy === "none" ? "None" : groupBy[0].toUpperCase() + groupBy.slice(1)}
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {(["none", "domain", "owner", "source", "status"] as GroupBy[]).map((g) => (
+                <DropdownMenuItem key={g} onClick={() => setGroupBy(g)}>
+                  {g[0].toUpperCase() + g.slice(1)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <div className="px-8 py-2">
-        <div className="grid grid-cols-[1fr_180px_90px_110px_90px] items-center border-b border-border px-2 py-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-          <div>Definition</div>
-          <div>Owner</div>
-          <div>Status</div>
-          <div>Confirmed</div>
-          <div className="text-right">Serve to AI</div>
-        </div>
+      {/* Table */}
+      <div className="flex flex-1 min-h-0">
+        <div className="flex-1 overflow-auto">
+          {/* Sticky column header */}
+          <div className="sticky top-0 z-10 grid grid-cols-[1fr_140px_120px_90px_100px_70px] items-center border-b border-border bg-background/95 px-6 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground backdrop-blur">
+            <div>Definition</div>
+            <div>Owner</div>
+            <div>Domain</div>
+            <div>Status</div>
+            <div>Confirmed</div>
+            <div className="text-right">AI</div>
+          </div>
 
-        {filtered.map((d) => {
-          const isOpen = expanded === d.id;
-          return (
-            <div key={d.id} className="border-b border-border">
-              <button
-                onClick={() => setExpanded(isOpen ? null : d.id)}
-                className="grid w-full grid-cols-[1fr_180px_90px_110px_90px] items-center px-2 py-2.5 text-left transition-colors hover:bg-accent/50"
-              >
-                <div className="flex min-w-0 items-center gap-2">
-                  <ChevronRight
-                    className={cn(
-                      "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
-                      isOpen && "rotate-90",
-                    )}
-                  />
-                  <span className="truncate font-medium">{d.name}</span>
-                </div>
-                <div className="truncate text-sm text-muted-foreground">{d.owner}</div>
-                <div>
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "text-[10px] font-normal",
-                      d.status === "tested" && "bg-[var(--success)]/10 text-[var(--success)]",
-                    )}
-                  >
-                    {d.status === "tested" ? "Tested" : "Draft"}
-                  </Badge>
-                </div>
-                <div className="text-xs text-muted-foreground">{d.confirmedAt ?? "—"}</div>
-                <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-                  <Switch checked={d.serveToAi} onCheckedChange={() => toggleServe(d.id)} />
-                </div>
-              </button>
-
-              {isOpen && (
-                <div className="border-t border-border bg-muted/30 px-10 py-5">
-                  <div className="grid gap-5">
-                    <div>
-                      <div className="mb-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Description
-                      </div>
-                      <p className="text-sm leading-relaxed">{d.description}</p>
-                    </div>
-                    <div>
-                      <div className="mb-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                        Formula
-                      </div>
-                      <pre className="overflow-x-auto rounded-md border border-border bg-background px-3 py-2 font-mono text-xs">
-                        {d.formula}
-                      </pre>
-                    </div>
-                    <div className="grid grid-cols-2 gap-5">
-                      <div>
-                        <div className="mb-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                          Used in
-                        </div>
-                        <div className="flex flex-wrap gap-1">
-                          {d.usedIn.map((u) => (
-                            <Badge key={u} variant="outline" className="text-[10px] font-normal">
-                              {u}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="mb-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                          Source
-                        </div>
-                        <div className="text-sm text-muted-foreground">{d.source}</div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 pt-1">
-                      <Button size="sm" variant="outline">
-                        <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Share2 className="mr-1 h-3.5 w-3.5" /> Share
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => navigate({ to: "/experiment", search: { def: d.id } as never })}
-                      >
-                        <FlaskConical className="mr-1 h-3.5 w-3.5" /> Run AI test
-                      </Button>
-                    </div>
-                  </div>
+          {grouped.map((g) => (
+            <div key={g.key}>
+              {groupBy !== "none" && (
+                <div className="sticky top-9 z-[5] flex items-center gap-2 border-b border-border bg-muted/40 px-6 py-1.5 backdrop-blur">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {g.key}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">{g.items.length}</span>
                 </div>
               )}
+              {g.items.map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => setSelectedId(d.id)}
+                  className={cn(
+                    "grid w-full grid-cols-[1fr_140px_120px_90px_100px_70px] items-center border-b border-border/60 px-6 py-1.5 text-left transition-colors hover:bg-accent/50",
+                    selectedId === d.id && "bg-accent",
+                  )}
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate text-sm font-medium">{d.name}</span>
+                    <span className="truncate text-xs text-muted-foreground hidden md:inline">
+                      {d.description.slice(0, 60)}
+                      {d.description.length > 60 && "…"}
+                    </span>
+                  </div>
+                  <div className="truncate text-xs text-muted-foreground">{d.owner}</div>
+                  <div className="truncate text-xs text-muted-foreground">{d.domain}</div>
+                  <div>
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 text-[11px]",
+                        d.status === "tested" ? "text-[var(--success)]" : "text-muted-foreground",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "h-1.5 w-1.5 rounded-full",
+                          d.status === "tested" ? "bg-[var(--success)]" : "bg-muted-foreground/50",
+                        )}
+                      />
+                      {d.status === "tested" ? "Tested" : "Draft"}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{d.confirmedAt ?? "—"}</div>
+                  <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                    <Switch checked={d.serveToAi} onCheckedChange={() => toggleServe(d.id)} />
+                  </div>
+                </button>
+              ))}
             </div>
-          );
-        })}
+          ))}
 
-        {filtered.length === 0 && (
-          <div className="px-2 py-12 text-center text-sm text-muted-foreground">No definitions match.</div>
+          {filtered.length === 0 && (
+            <div className="px-6 py-16 text-center text-sm text-muted-foreground">
+              No definitions match these filters.
+            </div>
+          )}
+        </div>
+
+        {/* Detail drawer */}
+        {selected && (
+          <aside className="w-[420px] shrink-0 overflow-y-auto border-l border-border bg-background">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/95 px-5 py-3 backdrop-blur">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="truncate font-semibold">{selected.name}</span>
+                <Badge variant="secondary" className="text-[10px] font-normal">
+                  {selected.domain}
+                </Badge>
+              </div>
+              <button
+                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                onClick={() => setSelectedId(null)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-5 px-5 py-4">
+              <Field label="Description">
+                <p className="text-sm leading-relaxed">{selected.description}</p>
+              </Field>
+
+              <Field label="Formula">
+                <pre className="overflow-x-auto rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs">
+                  {selected.formula}
+                </pre>
+              </Field>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Owner">
+                  <span className="text-sm">{selected.owner}</span>
+                </Field>
+                <Field label="Source">
+                  <span className="text-sm text-muted-foreground">{selected.source}</span>
+                </Field>
+                <Field label="Status">
+                  <span className="text-sm">{selected.status === "tested" ? "Tested" : "Draft"}</span>
+                </Field>
+                <Field label="Confirmed">
+                  <span className="text-sm text-muted-foreground">{selected.confirmedAt ?? "—"}</span>
+                </Field>
+              </div>
+
+              <Field label="Used in">
+                <div className="flex flex-wrap gap-1">
+                  {selected.usedIn.map((u) => (
+                    <Badge key={u} variant="outline" className="text-[10px] font-normal">
+                      {u}
+                    </Badge>
+                  ))}
+                </div>
+              </Field>
+
+              <Field label="Serve to AI">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={selected.serveToAi}
+                    onCheckedChange={() => toggleServe(selected.id)}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {selected.serveToAi ? "Available via MCP" : "Not exposed"}
+                  </span>
+                </div>
+              </Field>
+
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button size="sm" variant="outline" className="h-7 text-xs">
+                  <Pencil className="mr-1 h-3 w-3" /> Edit
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs">
+                  <Share2 className="mr-1 h-3 w-3" /> Share
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => navigate({ to: "/experiment", search: { def: selected.id } as never })}
+                >
+                  <FlaskConical className="mr-1 h-3 w-3" /> Test in Experiment
+                </Button>
+              </div>
+            </div>
+          </aside>
         )}
       </div>
     </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function FilterMenu({
+  icon,
+  label,
+  count,
+  options,
+  selected,
+  onToggle,
+  onClear,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  count: number;
+  options: string[];
+  selected: Set<string>;
+  onToggle: (v: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={count > 0 ? "secondary" : "ghost"}
+          size="sm"
+          className="h-7 gap-1 text-xs"
+        >
+          {icon}
+          {label}
+          {count > 0 && (
+            <span className="ml-0.5 rounded bg-primary px-1 text-[10px] font-medium text-primary-foreground">
+              {count}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56">
+        <DropdownMenuLabel className="flex items-center justify-between text-xs">
+          {label}
+          {count > 0 && (
+            <button onClick={onClear} className="text-[11px] font-normal text-muted-foreground hover:text-foreground">
+              clear
+            </button>
+          )}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {options.map((o) => (
+          <DropdownMenuCheckboxItem
+            key={o}
+            checked={selected.has(o)}
+            onCheckedChange={() => onToggle(o)}
+            onSelect={(e) => e.preventDefault()}
+            className="text-xs"
+          >
+            {o}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
