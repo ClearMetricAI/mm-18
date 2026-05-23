@@ -35,6 +35,9 @@ function ServePage() {
   const [user, setUser] = useState("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copiedSummary, setCopiedSummary] = useState(false);
+  const [aliasSugs, setAliasSugs] = useState<AliasSuggestion[]>([]);
+  const dismissAlias = (id: string) =>
+    setAliasSugs((prev) => prev.filter((s) => s.id !== id));
 
   const agents = useMemo(() => Array.from(new Set(activityLog.map((a) => a.agent))), []);
   const users = useMemo(() => Array.from(new Set(activityLog.map((a) => a.user))), []);
