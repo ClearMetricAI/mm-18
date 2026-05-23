@@ -30,9 +30,23 @@ export const BREAKDOWN_TEAM = {
 
 export type Scenario = "healthy" | "warning" | "hit";
 
+export type Role = "owner" | "admin" | "editor" | "viewer";
+
+export const ROLES: { id: Role; name: string; blurb: string }[] = [
+  { id: "owner", name: "Owner", blurb: "Full access, including billing" },
+  { id: "admin", name: "Admin", blurb: "Manage workspace and billing" },
+  { id: "editor", name: "Editor", blurb: "Define and experiment, no billing" },
+  { id: "viewer", name: "Viewer", blurb: "Read-only access" },
+];
+
+export function canSeeBilling(role: Role): boolean {
+  return role === "owner" || role === "admin";
+}
+
 const KEY_SCENARIO = "clearmetric:billing-scenario";
 const KEY_PLAN = "clearmetric:billing-plan";
 const KEY_BONUS = "clearmetric:billing-bonus";
+const KEY_ROLE = "clearmetric:role";
 const EVENT = "clearmetric:billing-changed";
 
 function read<T>(key: string, fallback: T): T {
