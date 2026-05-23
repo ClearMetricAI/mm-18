@@ -113,6 +113,8 @@ function RootComponent() {
             <Outlet />
           </main>
           <CommandPalette />
+          <Toaster />
+
         </div>
       </ThemeProvider>
     </QueryClientProvider>
