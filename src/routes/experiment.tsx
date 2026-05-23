@@ -303,6 +303,37 @@ function ExperimentPage() {
 
 
           <div className="flex-1 overflow-y-auto">
+            {/* Engine-suggested test questions */}
+            <ReviewStrip count={visibleSugs.length} label="suggested test question">
+              {visibleSugs.map((s) => (
+                <ReviewCard
+                  key={s.id}
+                  kind={s.kind}
+                  title={s.title}
+                  rationale={s.rationale}
+                  acceptLabel="Add"
+                  onAccept={() => {
+                    setQuestions((prev) => [
+                      ...prev,
+                      suggestionToTestQuestion(s, def.id),
+                    ]);
+                    setDismissedSugs((prev) => new Set(prev).add(s.id));
+                  }}
+                  onDismiss={() =>
+                    setDismissedSugs((prev) => new Set(prev).add(s.id))
+                  }
+                >
+                  <div className="space-y-0.5">
+                    {s.criteria.map((c, i) => (
+                      <div key={i} className="text-muted-foreground">
+                        ✓ {c}
+                      </div>
+                    ))}
+                  </div>
+                </ReviewCard>
+              ))}
+            </ReviewStrip>
+
             {/* ROI headline — one line, one number */}
             <div className="px-6 py-5">
               {scores.questions === 0 ? (
