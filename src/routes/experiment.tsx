@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Select,
   SelectContent,
@@ -37,7 +37,7 @@ import {
   ChevronDown,
   MoreHorizontal,
   Info,
-  Gavel,
+  
 } from "lucide-react";
 
 import { useEffect, useMemo, useState } from "react";
@@ -71,7 +71,7 @@ function ExperimentPage() {
   const [editingQ, setEditingQ] = useState<string | null>(null);
   const [model, setModel] = useState(availableModels[0]);
   const [running, setRunning] = useState<string | null>(null);
-  const [showAbout, setShowAbout] = useState(false);
+  // about-strip removed for simplicity
   const [questionSuggestions, setQuestionSuggestions] = useState<TestQuestionSuggestion[]>([]);
   const [dismissedSugs, setDismissedSugs] = useState<Set<string>>(new Set());
 
