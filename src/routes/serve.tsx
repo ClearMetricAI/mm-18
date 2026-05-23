@@ -79,6 +79,18 @@ function ServePage() {
         <EndpointRow label="API key" value={MCP_KEY_MASKED} copied={copied === "key"} onCopy={() => copy("key", MCP_KEY_FULL)} />
       </div>
 
+      {/* Connect your agent */}
+      <div className="border-b border-border px-6 py-4">
+        <div className="mb-2 flex items-baseline justify-between">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Connect your agent
+          </span>
+          <span className="text-xs text-muted-foreground">Paste into your agent config · one-time setup</span>
+        </div>
+        <ConnectTabs copied={copied} copy={copy} />
+      </div>
+
+
 
 
       {/* Pulse */}
