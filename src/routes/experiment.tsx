@@ -231,36 +231,52 @@ function ExperimentPage() {
                   criterion. Reasoning is shown next to every check.
                 </TooltipContent>
               </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <button
-                    onClick={() => setShowBaseline((v) => !v)}
                     className={cn(
                       "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] transition-colors",
-                      baselineCustom
+                      activeBaselines.length > 1
                         ? "border-primary/40 bg-primary/5 text-foreground"
                         : "border-border text-muted-foreground hover:text-foreground",
                     )}
+                    title="Pick which baselines to compare against ClearMetric"
                   >
                     <SlidersHorizontal className="h-3 w-3" />
-                    {baselineCustom ? (
-                      <>
-                        Baseline:
-                        <span className="font-medium text-primary">custom</span>
-                        {files.length > 0 && (
-                          <span className="text-muted-foreground">· {files.length} file{files.length > 1 ? "s" : ""}</span>
-                        )}
-                      </>
-                    ) : (
-                      <span className="font-medium text-foreground">+ Customize baseline</span>
-                    )}
+                    Baselines:
+                    <span className="font-medium text-foreground">
+                      {activeBaselines.length === 0
+                        ? "none"
+                        : activeBaselines.length === 1
+                        ? activeBaselines[0].name
+                        : `${activeBaselines.length} selected`}
+                    </span>
+                    <ChevronDown className="h-3 w-3 opacity-60" />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[280px] text-xs">
-                  By default the model answers cold — no system prompt, no context. Paste your
-                  agent's real prompt, schemas, or docs to mirror production.
-                </TooltipContent>
-              </Tooltip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 text-xs">
+                  <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Compare against
+                  </DropdownMenuLabel>
+                  {baselines.map((b) => (
+                    <DropdownMenuCheckboxItem
+                      key={b.id}
+                      checked={b.selected}
+                      onCheckedChange={() => baselinesApi.toggle(b.id)}
+                      onSelect={(e) => e.preventDefault()}
+                      className="text-xs"
+                    >
+                      {b.name}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild className="text-xs">
+                    <Link to="/baselines" className="flex items-center gap-2">
+                      <Plus className="h-3 w-3" /> Manage baselines
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Select value={model} onValueChange={setModel}>
                 <SelectTrigger className="h-7 w-[150px] text-xs">
                   <SelectValue />
