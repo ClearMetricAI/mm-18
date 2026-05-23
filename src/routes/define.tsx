@@ -35,6 +35,13 @@ import { useEffect, useMemo, useState } from "react";
 import { definitions as seedDefs, draftField, type Definition } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ReviewCard, ReviewStrip } from "@/components/review-card";
+import {
+  suggestDefinitionDrafts,
+  suggestDriftAlerts,
+  suggestImprovements,
+  type Suggestion,
+} from "@/lib/engine";
 
 export const Route = createFileRoute("/define")({ component: DefinePage });
 
