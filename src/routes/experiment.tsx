@@ -79,11 +79,19 @@ function ExperimentPage() {
     const baseline = qs.reduce((acc, q) => acc + q.baselinePass.filter(Boolean).length, 0);
     const cm = qs.reduce((acc, q) => acc + q.cmPass.filter(Boolean).length, 0);
     const total = qs.reduce((acc, q) => acc + q.criteria.length, 0);
-    return { baseline, cm, total };
+    const changed = qs.filter(
+      (q) =>
+        q.baselineResponse !== q.cmResponse &&
+        !q.baselineResponse.startsWith("(not run") &&
+        !q.cmResponse.startsWith("(not run"),
+    ).length;
+    return { baseline, cm, total, changed, questions: qs.length };
   }, [qs]);
 
   const improvement =
     scores.total > 0 ? Math.round(((scores.cm - scores.baseline) / scores.total) * 100) : 0;
+  const changedPct =
+    scores.questions > 0 ? Math.round((scores.changed / scores.questions) * 100) : 0;
 
   const addQuestion = () => {
     const q: TestQuestion = {
@@ -268,16 +276,57 @@ function ExperimentPage() {
           )}
 
           <div className="flex-1 overflow-y-auto">
-            {/* Scorecards */}
-            <div className="grid grid-cols-3 gap-3 px-6 py-5">
-              <ScoreCard label="Without ClearMetric" value={`${scores.baseline}/${scores.total}`} tone="bad" />
-              <ScoreCard label="With ClearMetric" value={`${scores.cm}/${scores.total}`} tone="good" />
-              <ScoreCard
-                label="Improvement"
-                value={scores.total === 0 ? "—" : `+${improvement}%`}
-                tone="accent"
-              />
+            {/* ROI headline */}
+            <div className="px-6 py-5">
+              <div className="rounded-lg border border-border bg-muted/30 px-4 py-3">
+                <div className="text-base font-semibold text-foreground">
+                  {scores.questions === 0 ? (
+                    "No tests yet"
+                  ) : (
+                    <>
+                      Grounding changed the answer on{" "}
+                      <span className="text-primary">
+                        {scores.changed} of {scores.questions}
+                      </span>{" "}
+                      questions{" "}
+                      <span className="text-muted-foreground font-normal">({changedPct}%)</span>
+                    </>
+                  )}
+                </div>
+                <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>
+                    Ungrounded{" "}
+                    <span className="font-mono tabular-nums text-foreground">
+                      {scores.baseline}/{scores.total}
+                    </span>{" "}
+                    passed
+                  </span>
+                  <span className="text-muted-foreground/60">→</span>
+                  <span>
+                    Grounded{" "}
+                    <span className="font-mono tabular-nums text-foreground">
+                      {scores.cm}/{scores.total}
+                    </span>{" "}
+                    passed
+                  </span>
+                  <span className="text-muted-foreground/60">·</span>
+                  <span
+                    className={cn(
+                      "font-mono tabular-nums",
+                      improvement > 0
+                        ? "text-[var(--success)]"
+                        : improvement < 0
+                        ? "text-destructive"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {improvement > 0 ? "+" : ""}
+                    {scores.total === 0 ? "—" : `${improvement}%`}
+                  </span>
+                </div>
+              </div>
             </div>
+
 
             <div className="px-6">
               <div className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -486,7 +535,9 @@ function ExperimentPage() {
 
                               <div className="grid gap-3 md:grid-cols-2">
                                 <ResponsePanel
-                                  label="Without ClearMetric"
+                                  label="Ungrounded"
+                                  sublabel="LLM alone"
+                                  tooltip="The model answers from training data only. No company context."
                                   tone="bad"
                                   text={q.baselineResponse}
                                   passed={q.baselinePass}
@@ -494,7 +545,9 @@ function ExperimentPage() {
                                   criteria={q.criteria}
                                 />
                                 <ResponsePanel
-                                  label="With ClearMetric"
+                                  label="Grounded"
+                                  sublabel="LLM + your definitions"
+                                  tooltip="The model answers using your approved ClearMetric definitions as context."
                                   tone="good"
                                   text={q.cmResponse}
                                   passed={q.cmPass}
@@ -502,6 +555,7 @@ function ExperimentPage() {
                                   criteria={q.criteria}
                                 />
                               </div>
+
                             </>
                           )}
                         </div>
@@ -591,6 +645,8 @@ function ScoreCard({
 
 function ResponsePanel({
   label,
+  sublabel,
+  tooltip,
   tone,
   text,
   passed,
@@ -598,6 +654,8 @@ function ResponsePanel({
   criteria,
 }: {
   label: string;
+  sublabel?: string;
+  tooltip?: string;
   tone: "good" | "bad";
   text: string;
   passed: boolean[];
@@ -617,9 +675,25 @@ function ResponsePanel({
           headerCls,
         )}
       >
-        <span>{label}</span>
+        <span className="flex items-center gap-1.5">
+          <span>{label}</span>
+          {sublabel && (
+            <span className="font-normal normal-case tracking-normal opacity-70">· {sublabel}</span>
+          )}
+          {tooltip && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-3 w-3 cursor-help opacity-70" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[240px] text-xs">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </span>
         <span className="font-mono">{passCount}/{passed.length}</span>
       </div>
+
       <div className="px-3 py-2.5 text-xs leading-relaxed">{text}</div>
       <div className="border-t border-border bg-muted/20 px-3 py-2">
         <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -688,13 +762,13 @@ function AskAI({ defName }: { defName: string }) {
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <div className="overflow-hidden rounded-md border border-border bg-background">
             <div className="border-b bg-destructive/10 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-destructive border-destructive/20">
-              Without ClearMetric
+              Ungrounded · LLM alone
             </div>
             <div className="px-3 py-2.5 text-xs leading-relaxed">{result.baseline}</div>
           </div>
           <div className="overflow-hidden rounded-md border border-border bg-background">
             <div className="border-b bg-[var(--success)]/10 px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-[var(--success)] border-[var(--success)]/20">
-              With ClearMetric
+              Grounded · LLM + your definitions
             </div>
             <div className="px-3 py-2.5 text-xs leading-relaxed">{result.cm}</div>
           </div>

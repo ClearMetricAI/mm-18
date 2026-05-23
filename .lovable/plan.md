@@ -1,77 +1,49 @@
-# AI assist for ClearMetric — minimal cut
+# Make the value prop self-explanatory
 
-Add a single `✨ Draft with AI` pattern that works for both auto-generated and manual definitions, plus a drift signal and AI-generated test questions. No new pages, no chat panel, no review queue.
+Two minimal changes on `/experiment`. No new pages, no new data, no backend.
 
-## Scope
+## 1. Rename + clarify the two columns
 
-Four UI touchpoints. One data-model addition. No backend wiring yet (mock the AI call so the UX is real and reviewable; swap to Lovable AI later in one place).
+Industry pattern (LangSmith, Braintrust, Humanloop all do this): label the comparison by *what the model has access to*, not the product name.
 
-### 1. Define — origin badge in drawer header
-Tiny inline badge next to the definition name showing provenance:
-- `⚡ Auto · {source}` — engine-generated
-- `✏️ Manual` — user-created
-- `⚠️ Drifted` — replaces the auto badge when `driftFlag` is true (amber)
+- **"Without ClearMetric"** → **"Ungrounded"** with subtitle *"LLM answers alone"*
+- **"With ClearMetric"** → **"Grounded"** with subtitle *"LLM + your definitions"*
 
-Purely informational. No filtering, no separate tab.
+Add an `(i)` tooltip on each header with one sentence:
+- Ungrounded: *"The model answers from training data only. No company context."*
+- Grounded: *"The model answers using your approved ClearMetric definitions as context."*
 
-### 2. Define — ✨ Draft with AI on Description and Formula
-Small `✨` icon-button in the top-right of each field's label row. Click:
-- Shows a 600ms shimmer over the field
-- Replaces field content with mock AI draft built from name + domain + sibling fields
-- User edits inline as normal, saves on blur
+Applies in 3 places in `experiment.tsx`:
+- Scorecards (line ~273)
+- Per-question response panels (line ~489, ~497)
+- "Ask any question" preview card (line ~691, ~697)
 
-Same button works for empty fields (manual creation) and populated fields (regenerate).
+## 2. Replace the 3 scorecards with one ROI headline
 
-### 3. Define — drift strip in drawer
-When `selected.driftFlag === true`, render a thin amber strip directly under the drawer header:
+Current: three equal cards (`Without` / `With` / `Improvement`). Reads as a chart, not a verdict.
+
+Replacement: **one bold sentence + thin supporting row.**
 
 ```text
-⚠ Source changed Mar 12 · `revenue.amount` → `revenue.net_amount`   [✨ Update formula]
+┌────────────────────────────────────────────────────────────┐
+│  Grounding changed the answer on 7 of 10 questions  (70%)  │
+│  ───────────────────────────────────────────────────────── │
+│  Ungrounded 4/10 passed   →   Grounded 9/10 passed   +50%  │
+└────────────────────────────────────────────────────────────┘
 ```
 
-The inline `✨ Update formula` button calls the same draft action scoped to the formula field, then clears `driftFlag` on save.
+- **Headline** (text-lg, semibold): `Grounding changed the answer on X of Y questions`. Computed by counting questions where `baselineResponse !== cmResponse` (or grade differs). This is the killer stat — it answers *"do I need this?"* in one read.
+- **Supporting row** (text-xs, muted): the three current numbers inline, separated by `→`. Same info, 1/3 the vertical space.
+- Keep the existing thin pass/fail bar underneath unchanged.
 
-### 4. Experiment — ✨ Generate test questions
-New button next to "Run all" in the Experiment header: `✨ Generate questions`. Click:
-- Mock-appends 3 new `TestQuestion` entries for the selected definition (realistic question + 2–3 criteria, empty baseline/CM responses)
-- Toast: "3 questions drafted — review and run"
-- Real model runs still produce baseline/CM responses (we never fabricate those)
+Net effect: the page opens with a clear verdict instead of three numbers the user has to interpret.
 
-## Data model changes (`src/lib/mock-data.ts`)
+## Out of scope
 
-Add to `Definition`:
-```ts
-origin: "auto" | "manual"
-driftFlag?: boolean
-driftNote?: string   // e.g. "`revenue.amount` → `revenue.net_amount`"
-driftDate?: string
-```
+- No new metrics (hallucination detection, consistency runs, time-saved).
+- No changes to the per-question table, judge logic, or data model.
+- Product name "ClearMetric" stays everywhere else (sidebar, drift strip, etc.) — only the column labels change to functional terms.
 
-Seed:
-- ~70% of existing definitions → `origin: "auto"`, remainder `"manual"`
-- 2–3 definitions get `driftFlag: true` with realistic drift notes (so the amber strip is visible without hunting)
+## Files
 
-## File changes
-
-- `src/lib/mock-data.ts` — extend `Definition` type, seed origin + drift on a few rows, add a `draftField(def, field)` helper that returns plausible mock text
-- `src/routes/define.tsx` — origin badge in drawer header, drift strip, ✨ buttons on Description and Formula labels, shimmer state during "draft"
-- `src/routes/experiment.tsx` — `✨ Generate questions` button in header, append-questions handler, toast
-
-No changes to Serve, Settings, sidebar, or routing.
-
-## Technical notes
-
-- The mock `draftField` lives in `mock-data.ts` and returns deterministic strings per (definitionId, field) so the demo is stable. When real AI lands, swap this for a `POST /api/ai/draft` server function — the call site in the component stays identical.
-- Shimmer = a `bg-gradient-to-r animate-pulse` overlay on the field for ~600ms, then state update. Keep it subtle.
-- Drift strip uses existing token `--warning` (or `--destructive` at 60% if no warning token exists — confirm in `styles.css` during build).
-- ✨ icon = `Sparkles` from lucide (already imported in Define).
-- Origin badge uses the existing `Badge` component with `variant="outline"` and a tiny lucide icon (`Zap`, `Pencil`, `AlertTriangle`).
-
-## Explicitly out of scope
-
-- Real Lovable AI wiring (one swap later; mock now keeps the loop fast)
-- Review queue / pending state / approval workflow
-- AI-generated baseline or CM responses in Experiment
-- Chat panel, command-palette AI actions
-- Backend sync endpoint, drift detection logic (assumed already exists)
-- Bulk AI actions on multiple definitions
+- `src/routes/experiment.tsx` — only file touched.
