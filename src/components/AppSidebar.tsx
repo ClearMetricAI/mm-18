@@ -13,7 +13,7 @@ import {
   MoreHorizontal,
   Inbox,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { useViews } from "@/lib/views-store";
