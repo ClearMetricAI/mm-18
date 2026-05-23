@@ -1,4 +1,5 @@
 export type DefStatus = "draft" | "tested";
+export type DefOrigin = "auto" | "manual";
 
 export interface Definition {
   id: string;
@@ -12,6 +13,10 @@ export interface Definition {
   confirmedAt: string | null;
   status: DefStatus;
   serveToAi: boolean;
+  origin: DefOrigin;
+  driftFlag?: boolean;
+  driftNote?: string;
+  driftDate?: string;
 }
 
 // Base hand-written definitions (the curated, high-quality ones).
