@@ -1,48 +1,66 @@
-# Plan: Strip /define down to a single review queue
+# Smart Views in the sidebar
 
-## What's confusing today
+User-created, named, filter-based views over the Definitions library. Pinned in the sidebar. Persisted in `localStorage` (no backend needed for v1).
 
-The page stacks 6 layers: header, suggestion strip, toolbar (search + 2 filters + 2 toggles + group-by), sticky column header, grouped table, detail drawer, plus a floating bulk action bar. Every layer competes for the user's eye. For an MVP whose moat is "engine produces, user reviews," all of that scaffolding hides the one job.
+## What the user sees
 
-## Core principle
+Sidebar under **Define**:
 
-The page becomes **one column, one scroll, one decision at a time.** Engine suggestions on top. Approved definitions below. Nothing else.
+```
+Define
+Experiment
+Serve
+─────────────
+MY VIEWS
+  ★ Board metrics
+  ★ Finance · drift
+  ★ Owned by me
+  + New view
+─────────────
+Settings
+```
 
-## What stays
+- Click a view → routes to `/define?view=<id>`, opens the Library tab pre-filtered, view name shown as the section header with an "Edit / Rename / Delete" `⋯` menu.
+- "+ New view" → opens a small filter-builder modal. Save asks for a name.
+- Collapsing: the whole "My Views" group is collapsible (chevron next to the label) and remembers its open/closed state.
+- Empty state: if no views exist, "MY VIEWS" group shows just "+ New view" inline.
 
-- Page title with a single count: "12 to review · 47 approved"
-- **Inbox** (engine suggestions): vertical stack of review cards — Accept / Edit / Dismiss. Always visible, no collapse.
-- **Library** (approved definitions): plain vertical list below the inbox. Each row: name, one-line description, serve-to-AI toggle. Clicking opens an inline edit (no drawer).
-- Search box (one, simple, top of library).
+## Filter model
 
-## What goes away
+A view is `{ id, name, rules: Rule[] }`. Rules combine with AND (keep it simple — no OR / nesting in v1).
 
-- Owner filter, Domain filter, Served/Draft toggles, Group by dropdown.
-- Sticky column headers and grouped sections.
-- Checkbox bulk-select column and the floating bulk action bar.
-- Right-side detail drawer (replaced by inline expand).
-- "Share" header button. "New" demoted to a small `+` next to the library heading.
-- The collapsible chevron on the suggestion strip (always open, no chrome).
+Rule fields available (all from the existing `Definition` type, nothing new):
+- **Name** contains `<text>`
+- **Owner** is / is not `<owner>`
+- **Source** is / is not `<source>` (Salesforce, Snowflake, dbt, Manual, …)
+- **Domain** is / is not `<domain>` (Finance, Product, …)
+- **Status** is `draft | approved | tested`
+- **Served to AI** is `true | false`
+- **Has drift** is `true | false`
 
-## What changes elsewhere (only what mirrors this pattern)
+Builder UI: a stacked list of rule rows (field dropdown + operator + value), `+ Add rule` button, `Save view` / `Cancel`. No fancy query language.
 
-- **Experiment**: drop the about-strip toggle, drop the "Suggest more" button (suggestions auto-appear), drop "Group by" anywhere it lingers. One column: definition picker on the left, question list on the right, suggestions on top of the question list.
-- **Serve**: collapse the four-section stack into two — ROI line + activity log. "Most/Never requested" stays but as a single combined list with the "See why" action; stats row goes from 5 tiles to 3 (Today / This week / p50).
-- **Settings**: no change — already simple.
+## Where it integrates in `/define`
+
+- Library tab gains a small header strip when a view is active: `Board metrics · 12 of 60  [Edit] [×]` (× clears the view).
+- The view's filter runs *in addition to* the search box, so users can still type-to-narrow within a view.
+- The Inbox tab is unaffected — views only scope the Library.
 
 ## Files touched
 
-- edit `src/routes/define.tsx` — remove toolbar, drawer, bulk bar, grouping; render inbox + library list
-- edit `src/routes/experiment.tsx` — remove about-toggle and "Suggest more" button; let strip render whenever suggestions exist
-- edit `src/routes/serve.tsx` — drop 2 stat tiles, merge usage insights into one list
+- `src/lib/views.ts` (new) — `View` and `Rule` types, `matchesView(def, view)` evaluator, `loadViews()` / `saveViews()` localStorage helpers, default empty array.
+- `src/lib/views-store.ts` (new) — tiny `useViews()` hook wrapping the localStorage helpers with `useSyncExternalStore` so the sidebar and `/define` stay in sync.
+- `src/components/AppSidebar.tsx` — add the collapsible "MY VIEWS" group with the list of views, the `+ New view` button, and the per-view `⋯` menu (rename, edit, delete). Active highlighting reads `?view=` from the URL.
+- `src/components/view-editor.tsx` (new) — modal dialog with the rule builder. Used for both "new view" and "edit view." ~150 lines, uses existing shadcn `Dialog`, `Select`, `Input`, `Button`.
+- `src/routes/define.tsx` — read `?view=` from search params, apply `matchesView` on the Library list, render the active-view header strip with edit/clear actions.
 
-## Out of scope
+## What's out of scope (v1)
 
-- No new components (reuse `ReviewCard` / `ReviewStrip`).
-- No data model changes.
-- No nav changes.
-- Filters/grouping aren't deleted from the codebase wholesale yet — just removed from the rendered UI. If the user later wants power-user tools back, they live behind a single "⋯" menu.
+- No OR logic, no nested groups, no saved-filter sharing across users.
+- No views on Inbox, Experiment, or Serve — Definitions only.
+- No backend persistence — `localStorage` per browser. Easy to swap to Lovable Cloud later by replacing `views-store.ts`.
+- No drag-to-reorder; views are listed in creation order with newest at the bottom. Reorder can come later if asked for.
 
-## Why this works
+## Why this is small
 
-The user opens /define and sees: "Here are N things the engine wants you to look at. Below are the ones you've already approved." That's the entire mental model. Three buttons per item. No filters to learn, no grouping to configure, no drawer to navigate. The moat is visible because the engine's output is the first thing on screen, not buried under toolbars.
+Reuses every existing concept: shadcn dialog, the existing Definition fields, the existing Library tab. No new route, no schema change, no engine work. The whole feature is one new lib file + one new component + small additions to the sidebar and `/define`.
