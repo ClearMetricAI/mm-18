@@ -139,7 +139,7 @@ function DefinePage() {
     if (!selected && filtered.length) {
       navigate({
         to: "/define",
-        search: (prev) => ({ ...prev, id: filtered[0].id }),
+        search: (prev: Record<string, unknown>) => ({ ...prev, id: filtered[0].id }),
         replace: true,
       });
     }
@@ -148,7 +148,7 @@ function DefinePage() {
   const select = (id: string) =>
     navigate({
       to: "/define",
-      search: (prev) => ({ ...prev, id }),
+      search: (prev: Record<string, unknown>) => ({ ...prev, id }),
       replace: true,
     });
 
@@ -182,7 +182,7 @@ function DefinePage() {
 
   const removeDef = (id: string) => {
     setDefs((prev) => prev.filter((d) => d.id !== id));
-    navigate({ to: "/define", search: (prev) => ({ ...prev, id: undefined }) });
+    navigate({ to: "/define", search: (prev: Record<string, unknown>) => ({ ...prev, id: undefined }) });
   };
 
   // Keyboard nav: / to focus search, j/k or arrows to move, e to focus name
