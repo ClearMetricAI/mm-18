@@ -7,9 +7,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useMemo, useState } from "react";
 import { activityLog, REF_TS } from "@/lib/mock-data";
 import { ChevronRight, Copy, Check } from "lucide-react";
+
 
 const MCP_ENDPOINT = "https://mcp.clearmetric.ai/org_contoso/v1";
 const MCP_KEY_MASKED = "cm_live_••••••••••••••••2f8a";
