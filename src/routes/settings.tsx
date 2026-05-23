@@ -56,7 +56,7 @@ function SettingsPage() {
       lastSync: `Imported ${today}`,
     };
     setSources((prev) => [...prev, next]);
-    toast.success(`Found ${extracted} definitions in ${file.name}.`, {
+    toast.success(`Drafted ${extracted} definitions from ${file.name}`, {
       description: "Review them on Define.",
     });
   };
