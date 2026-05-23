@@ -261,16 +261,16 @@ function ExperimentPage() {
                 variant="ghost"
                 className="h-7 text-xs"
                 onClick={() => {
-                  const drafted = draftTestQuestions(def);
-                  setQuestions((prev) => [...prev, ...drafted]);
-                  setOpenQ(drafted[0].id);
-                  toast.success(`${drafted.length} questions drafted`, {
-                    description: "Review and run — baseline & ClearMetric responses come from real model runs.",
-                  });
+                  const fresh = suggestTestQuestions(def).map((s) => ({
+                    ...s,
+                    id: `${s.id}_${def.id}`,
+                  }));
+                  setQuestionSuggestions((prev) => [...prev, ...fresh]);
+                  toast.success(`${fresh.length} more suggestions`);
                 }}
               >
                 <Sparkles className="mr-1 h-3.5 w-3.5" />
-                Generate questions
+                Suggest more
               </Button>
               <Button size="sm" className="h-7 text-xs" onClick={runAll} disabled={running === "all"}>
                 {running === "all" ? (
