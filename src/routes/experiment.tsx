@@ -69,6 +69,11 @@ function ExperimentPage() {
   const [model, setModel] = useState(availableModels[0]);
   const [running, setRunning] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
+  const [showBaseline, setShowBaseline] = useState(false);
+  const [sysPrompt, setSysPrompt] = useState("");
+  const [extraContext, setExtraContext] = useState("");
+  const [files, setFiles] = useState<{ name: string; size: number }[]>([]);
+  const baselineCustom = sysPrompt.trim().length > 0 || extraContext.trim().length > 0 || files.length > 0;
 
   const def = definitions.find((d) => d.id === selected) ?? definitions[0];
   const qs = questions.filter((q) => q.definitionId === def.id);
