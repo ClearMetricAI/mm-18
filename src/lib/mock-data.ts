@@ -297,84 +297,172 @@ export interface TestQuestion {
   cmResponse: string;
   baselinePass: boolean[];
   cmPass: boolean[];
+  baselineReasons: string[];
+  cmReasons: string[];
 }
+
+export const judgeModel = "gpt-4o-mini";
 
 export const testQuestions: TestQuestion[] = [
   {
     id: "q1",
     definitionId: "def_net_revenue",
     question: "Does revenue include professional services?",
-    criteria: ["Must say no", "Must mention professional services are excluded", "Must reference net ARR basis"],
+    criteria: ["Answer is 'no'", "Mentions professional services are excluded", "References net ARR basis"],
     baselineResponse:
       "Yes, revenue typically includes all income streams including professional services unless otherwise specified.",
     cmResponse:
       "No. Net Revenue at this company explicitly excludes professional services, one-time fees, and refunds. It is reported on a net ARR basis.",
     baselinePass: [false, false, false],
     cmPass: [true, true, true],
+    baselineReasons: [
+      "Answer says 'yes' — opposite of expected.",
+      "Does not mention professional services as excluded.",
+      "No reference to ARR or net basis.",
+    ],
+    cmReasons: [
+      "Answer begins with 'No.' — matches.",
+      "Explicitly lists professional services as excluded.",
+      "States 'reported on a net ARR basis'.",
+    ],
   },
   {
     id: "q2",
     definitionId: "def_net_revenue",
     question: "How is Net Revenue calculated?",
-    criteria: ["Must reference subscription invoice lines", "Must subtract refunds", "Must mention paid status"],
+    criteria: ["References subscription invoice lines", "Subtracts refunds", "Mentions paid status filter"],
     baselineResponse: "Net Revenue is gross revenue minus discounts, returns, and allowances.",
     cmResponse:
       "Net Revenue = SUM of paid subscription invoice lines for the period, minus refunds. Only invoices with status = 'paid' and type = 'subscription' are included.",
     baselinePass: [false, false, false],
     cmPass: [true, true, true],
+    baselineReasons: [
+      "Generic accounting definition; no invoice line reference.",
+      "Says 'returns' not 'refunds' — not the company term.",
+      "No mention of paid status.",
+    ],
+    cmReasons: [
+      "Uses 'subscription invoice lines' verbatim.",
+      "Explicit 'minus refunds'.",
+      "Filters on status = 'paid'.",
+    ],
   },
   {
     id: "q3",
     definitionId: "def_net_revenue",
     question: "Is Net Revenue the same as MRR × 12?",
-    criteria: ["Must say no", "Must explain MRR is recurring while net revenue is recognized"],
+    criteria: ["Answer is 'no'", "Distinguishes recurring run-rate from recognized revenue"],
     baselineResponse: "Yes, you can approximate annual revenue by multiplying MRR by 12.",
     cmResponse:
       "No. MRR × 12 is an annualized run-rate of active subscriptions. Net Revenue is the revenue actually recognized in the period from paid subscription invoices minus refunds.",
     baselinePass: [false, false],
     cmPass: [true, true],
+    baselineReasons: [
+      "Says 'yes' — opposite of expected.",
+      "Treats MRR × 12 as equivalent; misses the distinction.",
+    ],
+    cmReasons: [
+      "Answer begins with 'No.' — matches.",
+      "Clearly contrasts run-rate vs recognized revenue.",
+    ],
   },
   {
     id: "q4",
     definitionId: "def_logo_churn",
     question: "Is logo churn weighted by revenue?",
-    criteria: ["Must say no", "Must mention it's account count based"],
+    criteria: ["Answer is 'no'", "States it is account-count based"],
     baselineResponse: "Logo churn is typically revenue-weighted to reflect customer value.",
-    cmResponse: "No. Logo Churn is the count of churned accounts divided by total accounts at the start of the period. It is not weighted by revenue.",
+    cmResponse:
+      "No. Logo Churn is the count of churned accounts divided by total accounts at the start of the period. It is not weighted by revenue.",
     baselinePass: [false, false],
     cmPass: [true, true],
+    baselineReasons: [
+      "Says it is weighted — opposite of expected.",
+      "No mention of account counts.",
+    ],
+    cmReasons: ["Explicit 'No.'", "Defines as account count over starting accounts."],
   },
   {
     id: "q5",
     definitionId: "def_logo_churn",
     question: "What's the difference between logo churn and revenue churn?",
-    criteria: ["Must distinguish account count vs revenue", "Must reference downgrades for revenue churn"],
+    criteria: ["Distinguishes account count vs revenue", "References downgrades for revenue churn"],
     baselineResponse: "They are essentially the same metric expressed differently.",
     cmResponse:
       "Logo Churn counts cancelled accounts. Revenue Churn measures lost MRR from cancellations AND downgrades, divided by starting MRR. They can move independently.",
     baselinePass: [false, false],
     cmPass: [true, true],
+    baselineReasons: ["Conflates the two metrics.", "No mention of downgrades."],
+    cmReasons: ["Clear contrast: account count vs MRR.", "Explicitly includes downgrades."],
   },
   {
     id: "q6",
     definitionId: "def_mrr",
     question: "Does MRR include professional services?",
-    criteria: ["Must say no", "Must reference subscription-only"],
+    criteria: ["Answer is 'no'", "References subscription-only scope"],
     baselineResponse: "MRR usually represents recurring revenue, which may include services if recurring.",
-    cmResponse: "No. MRR includes only active subscription contract values, normalized monthly. Professional services are excluded.",
+    cmResponse:
+      "No. MRR includes only active subscription contract values, normalized monthly. Professional services are excluded.",
     baselinePass: [false, false],
     cmPass: [true, true],
+    baselineReasons: ["Hedges with 'may include' — not a clear no.", "Doesn't constrain to subscriptions."],
+    cmReasons: ["Explicit 'No.'", "States 'only active subscription contract values'."],
   },
   {
     id: "q7",
     definitionId: "def_cac",
     question: "What's included in CAC?",
-    criteria: ["Must mention fully-loaded S&M spend", "Must reference new customers in same period"],
+    criteria: ["Mentions fully-loaded S&M spend", "References new customers in same period"],
     baselineResponse: "CAC is marketing spend divided by new customers.",
     cmResponse:
       "CAC = (fully-loaded sales spend + marketing spend) for the period, divided by new customers acquired in the same period. Sales spend is included, not just marketing.",
     baselinePass: [false, false],
     cmPass: [true, true],
+    baselineReasons: ["Omits sales spend entirely.", "Doesn't specify same-period matching."],
+    cmReasons: ["Explicitly 'fully-loaded sales + marketing'.", "Matches new customers to same period."],
+  },
+  {
+    id: "q8",
+    definitionId: "def_mau",
+    question: "Are internal users counted in MAU?",
+    criteria: ["Answer is 'no'", "References 30-day window", "Mentions bot exclusion"],
+    baselineResponse: "MAU usually counts all active users in the past month.",
+    cmResponse:
+      "No. MAU excludes internal users and bots. It counts distinct users with at least one qualifying event in the trailing 30 days.",
+    baselinePass: [false, false, false],
+    cmPass: [true, true, true],
+    baselineReasons: [
+      "Doesn't exclude internal users.",
+      "Says 'past month', not trailing 30 days.",
+      "No mention of bots.",
+    ],
+    cmReasons: ["Explicit 'No.'", "Uses 'trailing 30 days' verbatim.", "Explicitly excludes bots."],
+  },
+  {
+    id: "q9",
+    definitionId: "def_nrr",
+    question: "Does NRR include new business?",
+    criteria: ["Answer is 'no'", "Mentions cohort of customers active at period start"],
+    baselineResponse: "NRR generally includes all revenue movements including new sales.",
+    cmResponse:
+      "No. NRR is cohort-based on customers active at the start of the period. New business is excluded — it's measured separately as new ARR.",
+    baselinePass: [false, false],
+    cmPass: [true, true],
+    baselineReasons: ["Says new sales are included — incorrect.", "No cohort framing."],
+    cmReasons: ["Explicit 'No.'", "States cohort starts at period start."],
+  },
+  {
+    id: "q10",
+    definitionId: "def_pipeline",
+    question: "What stages count toward Qualified Pipeline?",
+    criteria: ["Mentions Stage 2 (Discovery) or later", "Excludes Closed Lost", "References 180-day age cap"],
+    baselineResponse: "Qualified pipeline is usually anything past initial qualification.",
+    cmResponse:
+      "Qualified Pipeline = open opportunities at Stage 2 (Discovery) or later, with ACV summed. Closed Lost is excluded, and opportunities older than 180 days are dropped.",
+    baselinePass: [false, false, false],
+    cmPass: [true, true, true],
+    baselineReasons: ["Vague — no specific stage.", "Doesn't mention Closed Lost.", "No age cap."],
+    cmReasons: ["Names 'Stage 2 (Discovery) or later'.", "Explicitly excludes Closed Lost.", "Cites 180-day cap."],
   },
 ];
 
