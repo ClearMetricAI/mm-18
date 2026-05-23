@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, Search, ChevronDown, AlertTriangle, Sparkles } from "lucide-react";
+import { Plus, Search, ChevronDown, AlertTriangle, Sparkles, X, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -15,8 +15,17 @@ import {
   suggestImprovements,
   type Suggestion,
 } from "@/lib/engine";
+import { matchesView } from "@/lib/views";
+import { useViews } from "@/lib/views-store";
+import { ViewEditor } from "@/components/view-editor";
+import { useNavigate } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/define")({ component: DefinePage });
+export const Route = createFileRoute("/define")({
+  component: DefinePage,
+  validateSearch: (s: Record<string, unknown>) => ({
+    view: typeof s.view === "string" ? s.view : undefined,
+  }),
+});
 
 type Tab = "inbox" | "library";
 
