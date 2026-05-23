@@ -214,12 +214,9 @@ function DefinePage() {
       <div className="flex flex-1 min-h-0">
         <div className="flex-1 overflow-auto">
           {/* Sticky column header */}
-          <div className="sticky top-0 z-10 grid grid-cols-[1fr_140px_120px_90px_100px_70px] items-center border-b border-border bg-background/95 px-6 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground backdrop-blur">
+          <div className="sticky top-0 z-10 grid grid-cols-[1fr_180px_60px] items-center gap-3 border-b border-border bg-background/95 px-6 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground backdrop-blur">
             <div>Definition</div>
             <div>Owner</div>
-            <div>Domain</div>
-            <div>Status</div>
-            <div>Confirmed</div>
             <div className="text-right">AI</div>
           </div>
 
@@ -238,36 +235,26 @@ function DefinePage() {
                   key={d.id}
                   onClick={() => setSelectedId(d.id)}
                   className={cn(
-                    "grid w-full grid-cols-[1fr_140px_120px_90px_100px_70px] items-center border-b border-border/60 px-6 py-1.5 text-left transition-colors hover:bg-accent/50",
+                    "grid w-full grid-cols-[1fr_180px_60px] items-center gap-3 border-b border-border/60 px-6 py-1.5 text-left transition-colors hover:bg-accent/50",
                     selectedId === d.id && "bg-accent",
                   )}
+                  title={d.description}
                 >
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="truncate text-sm font-medium">{d.name}</span>
-                    <span className="truncate text-xs text-muted-foreground hidden md:inline">
-                      {d.description.slice(0, 60)}
-                      {d.description.length > 60 && "…"}
-                    </span>
-                  </div>
-                  <div className="truncate text-xs text-muted-foreground">{d.owner}</div>
-                  <div className="truncate text-xs text-muted-foreground">{d.domain}</div>
-                  <div>
                     <span
                       className={cn(
-                        "inline-flex items-center gap-1 text-[11px]",
-                        d.status === "tested" ? "text-[var(--success)]" : "text-muted-foreground",
+                        "h-1.5 w-1.5 shrink-0 rounded-full",
+                        d.status === "tested" ? "bg-[var(--success)]" : "bg-muted-foreground/40",
                       )}
-                    >
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 rounded-full",
-                          d.status === "tested" ? "bg-[var(--success)]" : "bg-muted-foreground/50",
-                        )}
-                      />
-                      {d.status === "tested" ? "Tested" : "Draft"}
-                    </span>
+                      title={d.status === "tested" ? "Tested" : "Draft"}
+                    />
+                    <span className="truncate text-sm font-medium">{d.name}</span>
                   </div>
-                  <div className="text-xs text-muted-foreground">{d.confirmedAt ?? "—"}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {d.owner}
+                    <span className="mx-1.5 opacity-40">·</span>
+                    {d.domain}
+                  </div>
                   <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                     <Switch checked={d.serveToAi} onCheckedChange={() => toggleServe(d.id)} />
                   </div>
