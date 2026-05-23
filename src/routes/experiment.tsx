@@ -508,9 +508,9 @@ function ExperimentPage() {
 
                               <div className="grid gap-3 md:grid-cols-2">
                                 <ResponsePanel
-                                  label="Ungrounded"
-                                  sublabel="LLM alone"
-                                  tooltip="The model answers from training data only. No company context."
+                                  label="Baseline"
+                                  sublabel="metadata only"
+                                  tooltip="What Copilot or any connected AI sees today: table names, columns, measures, and existing source descriptions — but no governed definitions."
                                   tone="bad"
                                   text={q.baselineResponse}
                                   passed={q.baselinePass}
@@ -518,9 +518,9 @@ function ExperimentPage() {
                                   criteria={q.criteria}
                                 />
                                 <ResponsePanel
-                                  label="Grounded"
-                                  sublabel="LLM + your definitions"
-                                  tooltip="The model answers using your approved ClearMetric definitions as context."
+                                  label="ClearMetric"
+                                  sublabel="metadata + definitions"
+                                  tooltip="Same model and metadata, plus the governed ClearMetric definition (description, formula, exclusions, owner, scope)."
                                   tone="good"
                                   text={q.cmResponse}
                                   passed={q.cmPass}
