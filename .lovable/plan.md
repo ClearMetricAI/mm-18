@@ -1,99 +1,118 @@
-# Full Pricing Scenario — Simple & Intuitive
+# Plan: Inbox as the front door
 
-End-to-end pricing experience, mocked. No backend, no Stripe. Designed so a user understands what they pay for and what state they're in **without reading any explanation**.
+You want industry best practice + Experiment and Serve stay as top-level. The best-practice pattern for tools with engine-generated work (Linear, Height, Sentry, PagerDuty, Datadog) is **Inbox-as-home**: the app opens to a single queue of things that need a human, and the rest of the nav is the *work* you do once the queue is clear.
 
-## Three surfaces. That's it.
+So: replace Home with Inbox. Keep Define, Experiment, Serve, Settings. Remove the duplicate Inbox tab inside Define.
 
-### 1. `/pricing` — the public page
-Four cards in a row. Same minimal aesthetic as the rest of the app.
+---
 
-```
-   Free          Starter         Team           Business
-    $0           $49/mo         $299/mo         $999/mo
+## Sidebar (final)
 
-   500           10,000         75,000          300,000
-  credits       credits         credits         credits
-
-  1 source      3 sources      10 sources      Unlimited
-
-   Start         Choose         Choose         Contact us
+```text
+Inbox      (12)
+Define
+Experiment
+Serve
+─────────
+Settings
 ```
 
-Below the row, one quiet line:
-> *Credits cover engine work — drafts, drift checks, improvements. AI serving is always unlimited.*
+- **Inbox** is the new `/` route. Badge = unresolved count.
+- **Define / Experiment / Serve** unchanged as destinations.
+- Role-gated credit meter + Pricing link stay in the footer (existing behavior).
 
-No feature matrix. No comparison table. No FAQ. If a user can't decide from this, the answer is Starter.
+---
 
-### 2. Sidebar meter — always visible
-Bottom of sidebar, above Settings. One line.
+## Inbox page (`/`)
 
-```
-▓▓▓▓▓▓▓░░░  6.2k / 10k
-```
+```text
+Inbox
+Each item is one decision. Resolve and move on.
 
-Muted gray. Turns amber at 80%, red at 100%. Click → Billing.
-
-That's the entire "you're being metered" signal. No tooltip needed, no labels — the bar speaks for itself.
-
-### 3. Settings → Billing — the in-app surface
-One screen, three short blocks, no tabs:
-
-**Plan**
-```
-Team · $299/mo                              Change
-```
-
-**Usage this month**
-```
-▓▓▓▓▓▓▓░░░  6,247 / 10,000     resets Dec 14
-
-  Drafts                  2,340
-  Drift checks            1,820
-  Improvements            1,290
-  Syncs                     797
+  Open 12   Resolved   All
+  ──────
+  🔍 Search                              [Filter]
+  ─────────────────────────────────────────────
+  ⚠️  Revenue drifted from source       Finance · 2h
+  ✨  Draft: Churn rate                  Engine  · 4h
+  🔌  Snowflake sync failed                       1d
+  ✨  Improve ARR formula                Engine  · 1d
+  📝  Review requested: NPS              Sam     · 2d
+  ...
 ```
 
-**Top up**
-```
-[ 5,000 — $25 ]   [ 20,000 — $90 ]   [ 100,000 — $400 ]
-```
+- One unified queue, mixed item types.
+- Each row = one decision: icon · title · source/owner · age.
+- Click row → right-side sheet opens with the full review card (drift / draft / improvement) OR routes to the source page (sync → Settings; review → Define detail).
+- Resolve / Dismiss inline where possible. Resolved items move to the Resolved tab.
+- Empty state: "Inbox zero. Nothing needs you."
 
-That's the whole billing page. No invoices, no payment methods, no activity log expander — they add noise without adding clarity at this stage.
+### Item types in v1
 
-## The threshold experience (this is the part most pricing UIs miss)
+| Icon | Type        | Resolution                            |
+|------|-------------|---------------------------------------|
+| ⚠️   | Drift       | Acknowledge / open definition         |
+| ✨   | Draft       | Accept (creates def) / dismiss        |
+| ✨   | Improvement | Apply / dismiss                       |
+| 🔌   | Sync fail   | Open Settings → Connections (mocked)  |
+| 📝   | Review req. | Open definition in review mode (mocked)|
 
-A subtle banner at the top of the app changes with usage:
+Drift / drafts / improvements come from existing `src/lib/engine.ts`. Sync and review are mocked for v1 so the inbox feels real.
 
-- **<80% used** → no banner. Silence is the feature.
-- **80–99% used** → thin amber strip: *"You've used 85% of your credits."* with a single `Top up` button. Dismissible.
-- **100% used** → red strip, not dismissible: *"Credits exhausted. Engine paused."* Inbox shows a quiet empty state: *"Engine paused. Top up to resume."* Definitions keep serving to AI (because serving is free and unlimited — important nuance the UI surfaces by *not* breaking).
+---
 
-To let you experience all three without waiting, add a tiny scenario toggle on the Billing page, bottom-right, faded:
-```
-Scenario: ○ Healthy  ○ Warning  ● Limit hit
-```
-Reload-safe via localStorage. Removed before real launch.
+## Define page (`/define`)
 
-## Plan change = one tap
+- **Remove the Inbox tab and all three SectionGroup blocks** (drift / drafts / improvements). Their logic moves to Inbox.
+- Page becomes the Library only: search + list + accordion-or-detail row (master-detail refactor is a separate plan if you want it later).
+- Saved views (`?view=…`) keep working.
 
-`Change` opens a small sheet showing the four tiers as a vertical list. Tap one → toast: *"Moved to Team."* Done. No confirmation modal, no "are you sure," no proration math shown.
+---
 
-## Why this is simple
+## What gets cut
 
-- No tabs anywhere
-- One number per concept (credits used, credits in pack, dollars per plan)
-- The progress bar is the only chart
-- Color carries meaning (gray / amber / red) so the user doesn't read words to know their status
-- Every action is one click
+- `src/routes/index.tsx` placeholder
+- Define's `tab` state, `inbox` branch, and the `Sparkles`/`AlertTriangle` SectionGroup blocks
+- `UsageBanner` on Define (banners live on Inbox + Settings only; not duplicated)
 
-## Files
+## What stays
 
-- `src/lib/billing-mock.ts` — plans, usage state, scenario switch, hook
-- `src/components/CreditMeter.tsx` — sidebar pill
-- `src/components/UsageBanner.tsx` — threshold strip (renders nothing when healthy)
-- `src/routes/pricing.tsx` — public page
-- `src/routes/settings.billing.tsx` — billing surface (or inline section if settings is single-page)
-- `src/components/AppSidebar.tsx` — mount `<CreditMeter />`
-- `src/routes/__root.tsx` — mount `<UsageBanner />` once
+- Engine logic in `src/lib/engine.ts` — only the UI surface moves
+- Role gating, theme toggle, billing footer, scenario switching
+- Experiment and Serve routes, unchanged
 
-Approve and I'll build it. You'll be able to click `/pricing`, watch the meter in the sidebar, flip the scenario toggle to see warning + limit-hit states, and top up — the full story.
+---
+
+## Technical sketch
+
+1. **New** `src/components/inbox/InboxItem.tsx` — row component (icon + title + meta + click handler).
+2. **New** `src/components/inbox/InboxList.tsx` — owns the queue, tabs (Open/Resolved/All), search, filter chips, empty state.
+3. **New** `src/components/inbox/InboxSheet.tsx` — right-side `Sheet` that hosts the resolve UI per item type (reuses `ReviewCard`).
+4. **Extend** `src/lib/engine.ts` with two new mock item kinds: `sync-failure`, `review-request`. Add a `useInboxItems()` hook that aggregates suggestions + mocks + reads/writes resolved IDs from localStorage.
+5. **Rewrite** `src/routes/index.tsx` to render `<InboxList />`.
+6. **Edit** `src/routes/define.tsx` — strip the Inbox tab, keep the Library branch as the default render.
+7. **Edit** `src/components/AppSidebar.tsx` — add Inbox link with badge (count from `useInboxItems()`); reorder so Inbox is first.
+
+---
+
+## Out of scope (deliberate)
+
+- Master-detail refactor of `/define` (separate plan if you want it).
+- Real backends for sync / review items — mocked.
+- Bulk resolve, multi-select, keyboard shortcuts on the queue — defer.
+- Notification badges outside the app.
+
+---
+
+## Why this is the right call (and not the others)
+
+- **Vs. "one page" (Option A)**: you said keep Experiment and Serve as top-level. Inbox-on-top-of-Define stops being honest when the inbox also covers sync, billing, team reviews. A dedicated Inbox scales; an embedded strip doesn't.
+- **Vs. "just rename Home" (Option C)**: same UI shape but the duplicate Inbox tab inside Define is the real source of confusion. This plan fixes that.
+- **Vs. your screenshot**: same destination, simpler chrome — no "0 tables · 0 measures" meta strip, no Filter button when the list is empty, no Catalog/Lineage nav until those features actually exist.
+
+## Success check
+
+- New user opens app → lands on Inbox → sees a clear list of things to do.
+- "Where do I triage?" has one answer: Inbox.
+- Define has one job (browse + edit). Inbox has one job (resolve).
+- Sidebar count == reality. Resolving an item decrements it immediately.

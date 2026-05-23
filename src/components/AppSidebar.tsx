@@ -11,6 +11,7 @@ import {
   Plus,
   Filter,
   MoreHorizontal,
+  Inbox,
 } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/lib/theme";
@@ -20,6 +21,7 @@ import { ViewEditor } from "@/components/view-editor";
 import { CreditMeter } from "@/components/CreditMeter";
 import { definitions } from "@/lib/mock-data";
 import { useBilling, canSeeBilling } from "@/lib/billing-mock";
+import { useInbox } from "@/lib/inbox-store";
 import type { View } from "@/lib/views";
 import {
   DropdownMenu,
@@ -29,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const nav = [
+  { to: "/", label: "Inbox", icon: Inbox },
   { to: "/define", label: "Define", icon: BookOpen },
   { to: "/experiment", label: "Experiment", icon: FlaskConical },
   { to: "/serve", label: "Serve", icon: Radio },
@@ -44,6 +47,7 @@ export function AppSidebar() {
   const showBilling = canSeeBilling(role);
   const { theme, toggle } = useTheme();
   const { views, upsert, remove } = useViews();
+  const { openCount } = useInbox();
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<View | null>(null);
@@ -78,11 +82,16 @@ export function AppSidebar() {
 
       <nav className="flex-1 overflow-y-auto px-2 py-2">
         {nav.map(({ to, label, icon: Icon }) => {
-          const active = path === to || (to === "/define" && path === "/");
+          const active = path === to;
           return (
             <Link key={to} to={to} className={linkCls(active)}>
               <Icon className="h-4 w-4" />
-              {label}
+              <span className="flex-1">{label}</span>
+              {to === "/" && openCount > 0 && (
+                <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                  {openCount}
+                </span>
+              )}
             </Link>
           );
         })}
