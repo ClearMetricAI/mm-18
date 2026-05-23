@@ -38,7 +38,10 @@ import {
   MoreHorizontal,
   Info,
   Gavel,
+  SlidersHorizontal,
+  Paperclip,
 } from "lucide-react";
+
 import { useMemo, useState } from "react";
 import {
   definitions,
@@ -66,6 +69,11 @@ function ExperimentPage() {
   const [model, setModel] = useState(availableModels[0]);
   const [running, setRunning] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
+  const [showBaseline, setShowBaseline] = useState(false);
+  const [sysPrompt, setSysPrompt] = useState("");
+  const [extraContext, setExtraContext] = useState("");
+  const [files, setFiles] = useState<{ name: string; size: number }[]>([]);
+  const baselineCustom = sysPrompt.trim().length > 0 || extraContext.trim().length > 0 || files.length > 0;
 
   const def = definitions.find((d) => d.id === selected) ?? definitions[0];
   const qs = questions.filter((q) => q.definitionId === def.id);
@@ -219,6 +227,32 @@ function ExperimentPage() {
                   criterion. Reasoning is shown next to every check.
                 </TooltipContent>
               </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setShowBaseline((v) => !v)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] transition-colors",
+                      baselineCustom
+                        ? "border-primary/40 bg-primary/5 text-foreground"
+                        : "border-border text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <SlidersHorizontal className="h-3 w-3" />
+                    Baseline:
+                    <span className={cn("font-medium", baselineCustom ? "text-primary" : "text-foreground")}>
+                      {baselineCustom ? "custom" : "default"}
+                    </span>
+                    {baselineCustom && files.length > 0 && (
+                      <span className="text-muted-foreground">· {files.length} file{files.length > 1 ? "s" : ""}</span>
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[280px] text-xs">
+                  What your agent already knows before ClearMetric. Add your system prompt, schemas,
+                  or docs to make the comparison match production.
+                </TooltipContent>
+              </Tooltip>
               <Select value={model} onValueChange={setModel}>
                 <SelectTrigger className="h-7 w-[150px] text-xs">
                   <SelectValue />
@@ -272,6 +306,88 @@ function ExperimentPage() {
                 <span>{def.status === "tested" ? "Tested" : "Draft"}</span>
               </div>
               <p className="mt-2 text-xs leading-relaxed text-foreground/80">{def.description}</p>
+            </div>
+          )}
+
+          {/* Collapsible baseline setup */}
+          {showBaseline && (
+            <div className="border-b border-border bg-muted/20 px-6 py-4">
+              <div className="mb-3 flex items-baseline justify-between">
+                <div>
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Baseline setup
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    What your agent already sees in production. We run the test twice: with this alone, then with ClearMetric added.
+                  </p>
+                </div>
+                {baselineCustom && (
+                  <button
+                    onClick={() => { setSysPrompt(""); setExtraContext(""); setFiles([]); }}
+                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    System prompt
+                  </label>
+                  <Textarea
+                    value={sysPrompt}
+                    onChange={(e) => setSysPrompt(e.target.value)}
+                    placeholder="You are a data analyst at Contoso. Answer using our finance conventions…"
+                    className="min-h-[96px] resize-y font-mono text-[11px] leading-relaxed"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Extra context
+                    <span className="ml-1 normal-case tracking-normal text-muted-foreground/70">(schemas, dbt docs, RAG snippets)</span>
+                  </label>
+                  <Textarea
+                    value={extraContext}
+                    onChange={(e) => setExtraContext(e.target.value)}
+                    placeholder="Paste table schemas, glossary, or anything your agent normally has access to."
+                    className="min-h-[96px] resize-y font-mono text-[11px] leading-relaxed"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-border bg-background px-2.5 py-1 text-[11px] text-muted-foreground hover:text-foreground">
+                  <Paperclip className="h-3 w-3" />
+                  Attach files
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const list = Array.from(e.target.files ?? []).map((f) => ({ name: f.name, size: f.size }));
+                      setFiles((prev) => [...prev, ...list]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {files.map((f, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-[11px] text-foreground/80 ring-1 ring-border">
+                    <span className="truncate max-w-[160px]">{f.name}</span>
+                    <span className="text-muted-foreground">{Math.max(1, Math.round(f.size / 1024))}kb</span>
+                    <button
+                      onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                <span className="ml-auto text-[10px] text-muted-foreground">
+                  Applied to every test run · not stored
+                </span>
+              </div>
             </div>
           )}
 
