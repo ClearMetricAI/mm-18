@@ -29,8 +29,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { definitions as seedDefs, type Definition } from "@/lib/mock-data";
