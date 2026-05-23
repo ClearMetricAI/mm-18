@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,10 +28,13 @@ import {
   Sparkles,
   Zap,
   AlertTriangle,
+  Trash2,
+  CheckCircle2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { definitions as seedDefs, draftField, type Definition } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/define")({ component: DefinePage });
 
@@ -47,6 +51,8 @@ function DefinePage() {
   const [groupBy, setGroupBy] = useState<GroupBy>("domain");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drafting, setDrafting] = useState<"description" | "formula" | null>(null);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const runDraft = async (def: Definition, field: "description" | "formula") => {
     setDrafting(field);
@@ -120,6 +126,56 @@ function DefinePage() {
   };
 
   const selected = defs.find((d) => d.id === selectedId);
+
+  // Bulk selection helpers
+  const filteredIds = useMemo(() => filtered.map((d) => d.id), [filtered]);
+  const allChecked = filteredIds.length > 0 && filteredIds.every((id) => checked.has(id));
+  const someChecked = !allChecked && filteredIds.some((id) => checked.has(id));
+
+  const toggleCheck = (id: string) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    if (allChecked) setChecked(new Set());
+    else setChecked(new Set(filteredIds));
+  };
+  const clearChecked = () => setChecked(new Set());
+
+  const bulkSetStatus = (status: Definition["status"]) => {
+    setDefs((prev) => prev.map((d) => (checked.has(d.id) ? { ...d, status } : d)));
+    toast.success(`${checked.size} marked as ${status === "tested" ? "approved" : "draft"}`);
+    clearChecked();
+  };
+  const bulkSetServe = (serveToAi: boolean) => {
+    setDefs((prev) => prev.map((d) => (checked.has(d.id) ? { ...d, serveToAi } : d)));
+    toast.success(`${serveToAi ? "Exposed" : "Hidden from"} AI · ${checked.size} definitions`);
+    clearChecked();
+  };
+  const bulkDelete = () => {
+    const n = checked.size;
+    setDefs((prev) => prev.filter((d) => !checked.has(d.id)));
+    toast.success(`${n} definition${n === 1 ? "" : "s"} deleted`);
+    clearChecked();
+  };
+  const bulkRedraft = async () => {
+    setBulkBusy(true);
+    const ids = Array.from(checked);
+    const targets = defs.filter((d) => ids.includes(d.id));
+    const drafts = await Promise.all(
+      targets.map(async (d) => [d.id, await draftField(d, "description")] as const),
+    );
+    const map = new Map(drafts);
+    setDefs((prev) =>
+      prev.map((d) => (map.has(d.id) ? { ...d, description: map.get(d.id)! } : d)),
+    );
+    setBulkBusy(false);
+    toast.success(`Re-drafted ${ids.length} description${ids.length === 1 ? "" : "s"}`);
+    clearChecked();
+  };
 
   return (
     <div className="flex h-screen flex-col">
@@ -236,7 +292,14 @@ function DefinePage() {
       <div className="flex flex-1 min-h-0">
         <div className="flex-1 overflow-auto">
           {/* Sticky column header */}
-          <div className="sticky top-0 z-10 grid grid-cols-[1fr_180px_60px] items-center gap-3 border-b border-border bg-background/95 px-6 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground backdrop-blur">
+          <div className="sticky top-0 z-10 grid grid-cols-[28px_1fr_180px_60px] items-center gap-3 border-b border-border bg-background/95 px-6 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground backdrop-blur">
+            <div className="flex items-center">
+              <Checkbox
+                checked={allChecked ? true : someChecked ? "indeterminate" : false}
+                onCheckedChange={toggleAll}
+                aria-label="Select all"
+              />
+            </div>
             <div>Definition</div>
             <div>Owner</div>
             <div className="text-right">AI</div>
@@ -253,15 +316,31 @@ function DefinePage() {
                 </div>
               )}
               {g.items.map((d) => (
-                <button
+                <div
                   key={d.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedId(d.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedId(d.id);
+                    }
+                  }}
                   className={cn(
-                    "grid w-full grid-cols-[1fr_180px_60px] items-center gap-3 border-b border-border/60 px-6 py-1.5 text-left transition-colors hover:bg-accent/50",
+                    "grid w-full cursor-pointer grid-cols-[28px_1fr_180px_60px] items-center gap-3 border-b border-border/60 px-6 py-1.5 text-left transition-colors hover:bg-accent/50",
                     selectedId === d.id && "bg-accent",
+                    checked.has(d.id) && "bg-accent/40",
                   )}
                   title={d.description}
                 >
+                  <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={checked.has(d.id)}
+                      onCheckedChange={() => toggleCheck(d.id)}
+                      aria-label={`Select ${d.name}`}
+                    />
+                  </div>
                   <div className="flex min-w-0 items-center gap-2">
                     <span
                       className={cn(
@@ -280,7 +359,7 @@ function DefinePage() {
                   <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                     <Switch checked={d.serveToAi} onCheckedChange={() => toggleServe(d.id)} />
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           ))}
@@ -422,6 +501,83 @@ function DefinePage() {
           </aside>
         )}
       </div>
+
+      {/* Bulk action bar */}
+      {checked.size > 0 && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center">
+          <div className="pointer-events-auto flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 shadow-lg">
+            <div className="flex items-center gap-2 px-2">
+              <span className="text-xs font-medium">{checked.size} selected</span>
+              <button
+                onClick={clearChecked}
+                className="text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="mx-1 h-5 w-px bg-border" />
+
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 text-xs"
+              onClick={bulkRedraft}
+              disabled={bulkBusy}
+            >
+              <Sparkles className={cn("h-3.5 w-3.5", bulkBusy && "animate-spin")} />
+              {bulkBusy ? "Drafting…" : "Re-draft"}
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Status
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuItem onClick={() => bulkSetStatus("tested")} className="text-xs">
+                  Mark as Approved
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => bulkSetStatus("draft")} className="text-xs">
+                  Mark as Draft
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs">
+                  <Zap className="h-3.5 w-3.5" />
+                  Serve
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuItem onClick={() => bulkSetServe(true)} className="text-xs">
+                  Expose to AI
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => bulkSetServe(false)} className="text-xs">
+                  Hide from AI
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="mx-1 h-5 w-px bg-border" />
+
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={bulkDelete}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
