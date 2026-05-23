@@ -13,6 +13,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ServeRouteImport } from './routes/serve'
 import { Route as ExperimentRouteImport } from './routes/experiment'
 import { Route as DefineRouteImport } from './routes/define'
+import { Route as BaselinesRouteImport } from './routes/baselines'
 import { Route as IndexRouteImport } from './routes/index'
 
 const SettingsRoute = SettingsRouteImport.update({
@@ -35,6 +36,11 @@ const DefineRoute = DefineRouteImport.update({
   path: '/define',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BaselinesRoute = BaselinesRouteImport.update({
+  id: '/baselines',
+  path: '/baselines',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -43,6 +49,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/baselines': typeof BaselinesRoute
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
   '/serve': typeof ServeRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/baselines': typeof BaselinesRoute
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
   '/serve': typeof ServeRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/baselines': typeof BaselinesRoute
   '/define': typeof DefineRoute
   '/experiment': typeof ExperimentRoute
   '/serve': typeof ServeRoute
@@ -65,14 +74,28 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/define' | '/experiment' | '/serve' | '/settings'
+  fullPaths:
+    | '/'
+    | '/baselines'
+    | '/define'
+    | '/experiment'
+    | '/serve'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/define' | '/experiment' | '/serve' | '/settings'
-  id: '__root__' | '/' | '/define' | '/experiment' | '/serve' | '/settings'
+  to: '/' | '/baselines' | '/define' | '/experiment' | '/serve' | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/baselines'
+    | '/define'
+    | '/experiment'
+    | '/serve'
+    | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BaselinesRoute: typeof BaselinesRoute
   DefineRoute: typeof DefineRoute
   ExperimentRoute: typeof ExperimentRoute
   ServeRoute: typeof ServeRoute
@@ -109,6 +132,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DefineRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/baselines': {
+      id: '/baselines'
+      path: '/baselines'
+      fullPath: '/baselines'
+      preLoaderRoute: typeof BaselinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -121,6 +151,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BaselinesRoute: BaselinesRoute,
   DefineRoute: DefineRoute,
   ExperimentRoute: ExperimentRoute,
   ServeRoute: ServeRoute,

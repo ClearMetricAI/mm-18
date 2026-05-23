@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuLabel,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
@@ -39,7 +41,7 @@ import {
   Info,
   Gavel,
   SlidersHorizontal,
-  Paperclip,
+  
 } from "lucide-react";
 
 import { useMemo, useState } from "react";
@@ -53,6 +55,7 @@ import {
 } from "@/lib/mock-data";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useBaselines, baselinesApi } from "@/lib/baselines-store";
 
 export const Route = createFileRoute("/experiment")({
   validateSearch: (s: Record<string, unknown>) => ({ def: (s.def as string) ?? "def_net_revenue" }),
@@ -69,11 +72,12 @@ function ExperimentPage() {
   const [model, setModel] = useState(availableModels[0]);
   const [running, setRunning] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
-  const [showBaseline, setShowBaseline] = useState(false);
-  const [sysPrompt, setSysPrompt] = useState("");
-  const [extraContext, setExtraContext] = useState("");
-  const [files, setFiles] = useState<{ name: string; size: number }[]>([]);
-  const baselineCustom = sysPrompt.trim().length > 0 || extraContext.trim().length > 0 || files.length > 0;
+  const baselines = useBaselines();
+  const activeBaselines = baselines.filter((b) => b.selected);
+  const [viewBaselineId, setViewBaselineId] = useState<string>("cold");
+  // Make sure view always points at a selected baseline
+  const effectiveViewId =
+    activeBaselines.find((b) => b.id === viewBaselineId)?.id ?? activeBaselines[0]?.id ?? "cold";
 
   const def = definitions.find((d) => d.id === selected) ?? definitions[0];
   const qs = questions.filter((q) => q.definitionId === def.id);
@@ -227,36 +231,52 @@ function ExperimentPage() {
                   criterion. Reasoning is shown next to every check.
                 </TooltipContent>
               </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <button
-                    onClick={() => setShowBaseline((v) => !v)}
                     className={cn(
                       "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] transition-colors",
-                      baselineCustom
+                      activeBaselines.length > 1
                         ? "border-primary/40 bg-primary/5 text-foreground"
                         : "border-border text-muted-foreground hover:text-foreground",
                     )}
+                    title="Pick which baselines to compare against ClearMetric"
                   >
                     <SlidersHorizontal className="h-3 w-3" />
-                    {baselineCustom ? (
-                      <>
-                        Baseline:
-                        <span className="font-medium text-primary">custom</span>
-                        {files.length > 0 && (
-                          <span className="text-muted-foreground">· {files.length} file{files.length > 1 ? "s" : ""}</span>
-                        )}
-                      </>
-                    ) : (
-                      <span className="font-medium text-foreground">+ Customize baseline</span>
-                    )}
+                    Baselines:
+                    <span className="font-medium text-foreground">
+                      {activeBaselines.length === 0
+                        ? "none"
+                        : activeBaselines.length === 1
+                        ? activeBaselines[0].name
+                        : `${activeBaselines.length} selected`}
+                    </span>
+                    <ChevronDown className="h-3 w-3 opacity-60" />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[280px] text-xs">
-                  By default the model answers cold — no system prompt, no context. Paste your
-                  agent's real prompt, schemas, or docs to mirror production.
-                </TooltipContent>
-              </Tooltip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 text-xs">
+                  <DropdownMenuLabel className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Compare against
+                  </DropdownMenuLabel>
+                  {baselines.map((b) => (
+                    <DropdownMenuCheckboxItem
+                      key={b.id}
+                      checked={b.selected}
+                      onCheckedChange={() => baselinesApi.toggle(b.id)}
+                      onSelect={(e) => e.preventDefault()}
+                      className="text-xs"
+                    >
+                      {b.name}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild className="text-xs">
+                    <Link to="/baselines" className="flex items-center gap-2">
+                      <Plus className="h-3 w-3" /> Manage baselines
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Select value={model} onValueChange={setModel}>
                 <SelectTrigger className="h-7 w-[150px] text-xs">
                   <SelectValue />
@@ -313,89 +333,32 @@ function ExperimentPage() {
             </div>
           )}
 
-          {/* Collapsible baseline setup */}
-          {showBaseline && (
-            <div className="border-b border-border bg-muted/20 px-6 py-4">
-              <div className="mb-3 flex items-baseline justify-between">
-                <div>
-                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Baseline setup
-                  </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {baselineCustom
-                      ? "Your custom baseline is active. Both runs use it; only the ClearMetric run also gets the definition."
-                      : "Default = cold model, nothing attached. Add your agent's real prompt and context below so the comparison reflects production."}
-                  </p>
-                </div>
-                {baselineCustom && (
-                  <button
-                    onClick={() => { setSysPrompt(""); setExtraContext(""); setFiles([]); }}
-                    className="text-[11px] text-muted-foreground hover:text-foreground"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    System prompt
-                  </label>
-                  <Textarea
-                    value={sysPrompt}
-                    onChange={(e) => setSysPrompt(e.target.value)}
-                    placeholder="You are a data analyst at Contoso. Answer using our finance conventions…"
-                    className="min-h-[96px] resize-y font-mono text-[11px] leading-relaxed"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                    Extra context
-                    <span className="ml-1 normal-case tracking-normal text-muted-foreground/70">(schemas, dbt docs, RAG snippets)</span>
-                  </label>
-                  <Textarea
-                    value={extraContext}
-                    onChange={(e) => setExtraContext(e.target.value)}
-                    placeholder="Paste table schemas, glossary, or anything your agent normally has access to."
-                    className="min-h-[96px] resize-y font-mono text-[11px] leading-relaxed"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-border bg-background px-2.5 py-1 text-[11px] text-muted-foreground hover:text-foreground">
-                  <Paperclip className="h-3 w-3" />
-                  Attach files
-                  <input
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => {
-                      const list = Array.from(e.target.files ?? []).map((f) => ({ name: f.name, size: f.size }));
-                      setFiles((prev) => [...prev, ...list]);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-                {files.map((f, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1 text-[11px] text-foreground/80 ring-1 ring-border">
-                    <span className="truncate max-w-[160px]">{f.name}</span>
-                    <span className="text-muted-foreground">{Math.max(1, Math.round(f.size / 1024))}kb</span>
-                    <button
-                      onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-                <span className="ml-auto text-[10px] text-muted-foreground">
-                  Applied to every test run · not stored
-                </span>
-              </div>
+          {/* Baseline tab strip — only when comparing more than one */}
+          {activeBaselines.length > 1 && (
+            <div className="flex items-center gap-1 border-b border-border bg-muted/20 px-6 py-2">
+              <span className="mr-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Viewing
+              </span>
+              {activeBaselines.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => setViewBaselineId(b.id)}
+                  className={cn(
+                    "rounded-md px-2 py-1 text-[11px] transition-colors",
+                    effectiveViewId === b.id
+                      ? "bg-background text-foreground ring-1 ring-border"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {b.name}
+                </button>
+              ))}
+              <span className="ml-auto text-[10px] text-muted-foreground">
+                vs ClearMetric · <Link to="/baselines" className="hover:text-foreground hover:underline">edit</Link>
+              </span>
             </div>
           )}
+
 
           <div className="flex-1 overflow-y-auto">
             {/* ROI headline — one line, one number */}

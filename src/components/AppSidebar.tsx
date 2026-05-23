@@ -1,10 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BookOpen, FlaskConical, Radio, Moon, Sun, Sparkles, Settings } from "lucide-react";
+import { BookOpen, FlaskConical, Radio, Moon, Sun, Sparkles, Settings, Layers } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { to: "/define", label: "Define", icon: BookOpen },
+  { to: "/baselines", label: "Baselines", icon: Layers },
   { to: "/experiment", label: "Experiment", icon: FlaskConical },
   { to: "/serve", label: "Serve", icon: Radio },
 ] as const;
