@@ -12,6 +12,7 @@ import appCss from "../styles.css?url";
 import { ThemeProvider } from "@/lib/theme";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CommandPalette } from "@/components/CommandPalette";
+import { UsageBanner } from "@/components/UsageBanner";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -109,12 +110,14 @@ function RootComponent() {
       <ThemeProvider>
         <div className="flex h-screen w-full overflow-hidden bg-background">
           <AppSidebar />
-          <main className="flex-1 min-w-0 overflow-hidden">
-            <Outlet />
+          <main className="flex-1 min-w-0 overflow-hidden flex flex-col">
+            <UsageBanner />
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <Outlet />
+            </div>
           </main>
           <CommandPalette />
           <Toaster />
-
         </div>
       </ThemeProvider>
     </QueryClientProvider>

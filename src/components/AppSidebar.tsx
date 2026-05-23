@@ -17,6 +17,7 @@ import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { useViews } from "@/lib/views-store";
 import { ViewEditor } from "@/components/view-editor";
+import { CreditMeter } from "@/components/CreditMeter";
 import { definitions } from "@/lib/mock-data";
 import type { View } from "@/lib/views";
 import {
@@ -172,6 +173,11 @@ export function AppSidebar() {
       </nav>
 
       <div className="border-t border-sidebar-border p-2 space-y-0.5">
+        <CreditMeter />
+        <Link to="/pricing" className={linkCls(path === "/pricing")}>
+          <Sparkles className="h-4 w-4" />
+          Pricing
+        </Link>
         <Link to="/settings" className={linkCls(path === "/settings")}>
           <Settings className="h-4 w-4" />
           Settings
