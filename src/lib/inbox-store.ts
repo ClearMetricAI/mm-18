@@ -171,7 +171,7 @@ function buildAll(): InboxItem[] {
 }
 
 // Stable snapshot — built once per module load. Mock data is deterministic.
-const ALL_ITEMS = typeof window === "undefined" ? [] : buildAll();
+const ALL_ITEMS = buildAll();
 
 // ── Hook ──────────────────────────────────────────────────────────────────
 
