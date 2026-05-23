@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,8 +16,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuLabel,
-  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
@@ -40,8 +38,6 @@ import {
   MoreHorizontal,
   Info,
   Gavel,
-  SlidersHorizontal,
-  
 } from "lucide-react";
 
 import { useMemo, useState } from "react";
@@ -55,7 +51,6 @@ import {
 } from "@/lib/mock-data";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useBaselines, baselinesApi } from "@/lib/baselines-store";
 
 export const Route = createFileRoute("/experiment")({
   validateSearch: (s: Record<string, unknown>) => ({ def: (s.def as string) ?? "def_net_revenue" }),
@@ -72,12 +67,6 @@ function ExperimentPage() {
   const [model, setModel] = useState(availableModels[0]);
   const [running, setRunning] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
-  const baselines = useBaselines();
-  const activeBaselines = baselines.filter((b) => b.selected);
-  const [viewBaselineId, setViewBaselineId] = useState<string>("cold");
-  // Make sure view always points at a selected baseline
-  const effectiveViewId =
-    activeBaselines.find((b) => b.id === viewBaselineId)?.id ?? activeBaselines[0]?.id ?? "cold";
 
   const def = definitions.find((d) => d.id === selected) ?? definitions[0];
   const qs = questions.filter((q) => q.definitionId === def.id);
