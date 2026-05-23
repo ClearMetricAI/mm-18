@@ -52,6 +52,8 @@ export function AppSidebar() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<View | null>(null);
   const [groupOpen, setGroupOpen] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const linkCls = (active: boolean) =>
     cn(
