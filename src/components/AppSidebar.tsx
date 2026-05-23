@@ -44,7 +44,13 @@ export function AppSidebar() {
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-2">
+      <div className="border-t border-sidebar-border p-2 space-y-1">
+        <div className="flex items-center justify-between px-2.5 py-1.5 text-[11px] text-sidebar-foreground/60">
+          <span>Quick jump</span>
+          <kbd className="rounded border border-sidebar-border bg-sidebar-accent/40 px-1.5 py-0.5 font-mono text-[10px]">
+            ⌘K
+          </kbd>
+        </div>
         <button
           onClick={toggle}
           className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"

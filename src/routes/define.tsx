@@ -45,13 +45,9 @@ function DefinePage() {
   const [groupBy, setGroupBy] = useState<GroupBy>("domain");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // ⌘K to focus search
+  // Escape closes drawer (⌘K is now the global palette)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        document.getElementById("def-search")?.focus();
-      }
       if (e.key === "Escape") setSelectedId(null);
     };
     window.addEventListener("keydown", handler);
@@ -234,11 +230,17 @@ function DefinePage() {
                 </div>
               )}
               {g.items.map((d) => (
-                <button
+                <div
                   key={d.id}
-                  onClick={() => setSelectedId(d.id)}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate({ to: "/m/$defId", params: { defId: d.id } as never })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter")
+                      navigate({ to: "/m/$defId", params: { defId: d.id } as never });
+                  }}
                   className={cn(
-                    "grid w-full grid-cols-[1fr_140px_120px_90px_100px_70px] items-center border-b border-border/60 px-6 py-1.5 text-left transition-colors hover:bg-accent/50",
+                    "grid w-full cursor-pointer grid-cols-[1fr_140px_120px_90px_100px_70px] items-center border-b border-border/60 px-6 py-1.5 text-left transition-colors hover:bg-accent/50 focus:bg-accent/50 focus:outline-none",
                     selectedId === d.id && "bg-accent",
                   )}
                 >
@@ -271,7 +273,7 @@ function DefinePage() {
                   <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
                     <Switch checked={d.serveToAi} onCheckedChange={() => toggleServe(d.id)} />
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           ))}

@@ -11,6 +11,7 @@ import {
 import appCss from "../styles.css?url";
 import { ThemeProvider } from "@/lib/theme";
 import { AppSidebar } from "@/components/AppSidebar";
+import { CommandPalette } from "@/components/CommandPalette";
 
 function NotFoundComponent() {
   return (
@@ -110,6 +111,7 @@ function RootComponent() {
           <main className="flex-1 min-w-0 overflow-hidden">
             <Outlet />
           </main>
+          <CommandPalette />
         </div>
       </ThemeProvider>
     </QueryClientProvider>
