@@ -501,6 +501,83 @@ function DefinePage() {
           </aside>
         )}
       </div>
+
+      {/* Bulk action bar */}
+      {checked.size > 0 && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center">
+          <div className="pointer-events-auto flex items-center gap-1 rounded-lg border border-border bg-background px-2 py-1.5 shadow-lg">
+            <div className="flex items-center gap-2 px-2">
+              <span className="text-xs font-medium">{checked.size} selected</span>
+              <button
+                onClick={clearChecked}
+                className="text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="mx-1 h-5 w-px bg-border" />
+
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 text-xs"
+              onClick={bulkRedraft}
+              disabled={bulkBusy}
+            >
+              <Sparkles className={cn("h-3.5 w-3.5", bulkBusy && "animate-spin")} />
+              {bulkBusy ? "Drafting…" : "Re-draft"}
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Status
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuItem onClick={() => bulkSetStatus("tested")} className="text-xs">
+                  Mark as Approved
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => bulkSetStatus("draft")} className="text-xs">
+                  Mark as Draft
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs">
+                  <Zap className="h-3.5 w-3.5" />
+                  Serve
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center">
+                <DropdownMenuItem onClick={() => bulkSetServe(true)} className="text-xs">
+                  Expose to AI
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => bulkSetServe(false)} className="text-xs">
+                  Hide from AI
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="mx-1 h-5 w-px bg-border" />
+
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={bulkDelete}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
