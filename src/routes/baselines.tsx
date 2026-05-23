@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Plus, Trash2, Paperclip, X, Lock, FlaskConical } from "lucide-react";
-import { AppSidebar, PageHeader } from "@/components/AppSidebar";
+import { PageHeader } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBaselines, baselinesApi, type Baseline } from "@/lib/baselines-store";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/baselines")({
   component: BaselinesPage,
