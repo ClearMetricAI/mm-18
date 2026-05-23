@@ -13,7 +13,7 @@ export interface Definition {
   confirmedAt: string | null;
   status: DefStatus;
   serveToAi: boolean;
-  origin: DefOrigin;
+  origin?: DefOrigin;
   driftFlag?: boolean;
   driftNote?: string;
   driftDate?: string;
