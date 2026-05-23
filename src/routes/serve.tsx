@@ -198,14 +198,18 @@ function ServePage() {
           </div>
           <ul className="space-y-1.5">
             {neverRequested.map((d) => (
-              <li
-                key={d.id}
-                className="flex items-center justify-between gap-3 text-xs"
-              >
+              <li key={d.id} className="flex items-center justify-between gap-3 text-xs">
                 <span className="truncate">{d.name}</span>
-                <span className="shrink-0 rounded-full bg-[var(--warning,theme(colors.amber.500))]/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 ring-1 ring-amber-500/20 dark:text-amber-400">
-                  Unused
-                </span>
+                <button
+                  className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 ring-1 ring-amber-500/20 transition-colors hover:bg-amber-500/20 dark:text-amber-400"
+                  onClick={() => {
+                    if (aliasSugs.some((s) => s.definitionId === d.id)) return;
+                    setAliasSugs((prev) => [...prev, suggestAliases(d)]);
+                  }}
+                  title="See why — and suggested aliases"
+                >
+                  See why
+                </button>
               </li>
             ))}
             {neverRequested.length === 0 && (
