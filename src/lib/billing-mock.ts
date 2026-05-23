@@ -80,15 +80,15 @@ function compute() {
   const scenario = read<Scenario>(KEY_SCENARIO, "healthy");
   const planId = read<Plan["id"]>(KEY_PLAN, "team");
   const bonus = read<number>(KEY_BONUS, 0);
+  const role = read<Role>(KEY_ROLE, "owner");
   const plan = PLANS.find((p) => p.id === planId) ?? PLANS[2];
 
-  // Base used depends on scenario, scaled to plan.
   const pct = scenario === "healthy" ? 0.62 : scenario === "warning" ? 0.85 : 1;
   const baseUsed = Math.round(plan.monthlyCredits * pct);
   const totalCredits = plan.monthlyCredits + bonus;
   const used = Math.min(baseUsed, totalCredits);
 
-  return { scenario, plan, used, total: totalCredits, bonus };
+  return { scenario, plan, used, total: totalCredits, bonus, role };
 }
 
 export function useBilling() {
