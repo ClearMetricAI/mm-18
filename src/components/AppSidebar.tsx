@@ -19,6 +19,7 @@ import { useViews } from "@/lib/views-store";
 import { ViewEditor } from "@/components/view-editor";
 import { CreditMeter } from "@/components/CreditMeter";
 import { definitions } from "@/lib/mock-data";
+import { useBilling, canSeeBilling } from "@/lib/billing-mock";
 import type { View } from "@/lib/views";
 import {
   DropdownMenu,
