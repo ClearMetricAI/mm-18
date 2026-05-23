@@ -83,7 +83,6 @@ function BaselinesPage() {
             )}
           </div>
         </div>
-      </main>
     </div>
   );
 }
