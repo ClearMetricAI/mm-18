@@ -102,6 +102,35 @@ function ServePage() {
     <div className="flex h-screen flex-col">
       <PageHeader title="Serve" />
 
+      <ReviewStrip count={aliasSugs.length} label="alias suggestion">
+        {aliasSugs.map((s) => (
+          <ReviewCard
+            key={s.id}
+            kind={s.kind}
+            title={s.title}
+            rationale={s.rationale}
+            acceptLabel="Add aliases"
+            onAccept={() => {
+              dismissAlias(s.id);
+              toast.success(`Aliases added: ${s.aliases.join(", ")}`);
+            }}
+            onDismiss={() => dismissAlias(s.id)}
+          >
+            <div className="flex flex-wrap gap-1">
+              {s.aliases.map((a) => (
+                <span
+                  key={a}
+                  className="rounded border border-border bg-muted/40 px-1.5 py-0.5 font-mono text-[10px]"
+                >
+                  {a}
+                </span>
+              ))}
+            </div>
+          </ReviewCard>
+        ))}
+      </ReviewStrip>
+
+
       {/* Section 1 — ROI summary */}
       <div className="border-b border-border bg-muted/20 px-6 py-4">
         <div className="flex items-center gap-3">
