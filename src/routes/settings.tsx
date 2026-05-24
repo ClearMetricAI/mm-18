@@ -12,6 +12,7 @@ import {
   setScenario,
   setRole,
   addBonus,
+  setTrialEnd,
   canSeeBilling,
   TOP_UPS,
   BREAKDOWN_TEAM,
