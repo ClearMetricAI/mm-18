@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -13,6 +13,8 @@ import {
   ChevronRight,
   Trash2,
   MoreHorizontal,
+  Sparkles,
+  Wand2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
