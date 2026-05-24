@@ -37,9 +37,27 @@ import { definitions as seedDefs, type Definition } from "@/lib/mock-data";
 import { matchesView } from "@/lib/views";
 import { useViews } from "@/lib/views-store";
 import { ViewEditor } from "@/components/view-editor";
+import { toast } from "sonner";
 
 type SortKey = "name" | "recent" | "drift" | "used";
 type GroupKey = "none" | "domain" | "owner" | "status";
+
+/* Mock AI generation — deterministic suggestions based on context */
+function mockAiGenerate(field: "description" | "formula", def: Definition): string {
+  if (field === "description") {
+    if (!def.description.trim()) {
+      return `Total ${def.name.toLowerCase()} across all recognized revenue streams, net of returns, discounts, and allowances, for the stated period.`;
+    }
+    return def.description + " Normalized for currency fluctuations and adjusted for non-recurring items.";
+  }
+  if (field === "formula") {
+    if (!def.formula.trim()) {
+      return `SUM(CASE WHEN recognized = true THEN amount ELSE 0 END) - returns - discounts`;
+    }
+    return def.formula + "\n-- validated against source-of-truth ledger monthly";
+  }
+  return "";
+}
 
 export const Route = createFileRoute("/define")({
   component: DefinePage,
