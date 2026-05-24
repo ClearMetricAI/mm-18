@@ -254,15 +254,27 @@ export function AppSidebar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {onTrial && (
-          <Link
-            to="/pricing"
-            className="mx-2 mt-1.5 flex items-center justify-between rounded-md bg-primary/10 px-2.5 py-1.5 text-left transition-colors hover:bg-primary/15"
-          >
-            <span className="text-[10px] font-medium text-primary">Trial</span>
-            <span className="text-[10px] font-semibold text-primary">{trialDaysLeft} days left</span>
-          </Link>
-        )}
+        <Link
+          to="/pricing"
+          className={cn(
+            "mx-2 mt-1.5 flex items-center justify-between rounded-md px-2.5 py-1.5 text-left transition-colors",
+            onTrial
+              ? "bg-primary/10 hover:bg-primary/15"
+              : "border border-dashed border-sidebar-border hover:border-sidebar-border/80 hover:bg-sidebar-accent/40",
+          )}
+        >
+          {onTrial ? (
+            <>
+              <span className="text-[10px] font-medium text-primary">Trial</span>
+              <span className="text-[10px] font-semibold text-primary">{trialDaysLeft} days left</span>
+            </>
+          ) : (
+            <>
+              <span className="text-[10px] font-medium text-sidebar-foreground/70">Start free trial</span>
+              <span className="text-[10px] font-semibold text-primary">14 days</span>
+            </>
+          )}
+        </Link>
       </div>
 
       <ViewEditor
