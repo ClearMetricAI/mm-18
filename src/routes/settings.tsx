@@ -305,6 +305,27 @@ function BillingSection() {
         </div>
       </div>
 
+      {/* Trial toggle */}
+      <div className="mb-3 flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
+        <div className="text-sm">
+          <span className="font-medium">Trial</span>
+          <span className="text-muted-foreground">
+            {trialDaysLeft != null ? ` · ${trialDaysLeft} days left` : " · Not active"}
+          </span>
+        </div>
+        <button
+          onClick={toggleTrial}
+          className={cn(
+            "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+            trialDaysLeft != null
+              ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+              : "bg-primary text-primary-foreground hover:opacity-90",
+          )}
+        >
+          {trialDaysLeft != null ? "End trial" : "Start 14-day trial"}
+        </button>
+      </div>
+
       {/* Scenario toggle (dev-only feel) */}
       <div className="flex items-center justify-end gap-3 border-t border-dashed border-border pt-3 text-[10px] text-muted-foreground/60">
         <span className="uppercase tracking-wider">Demo scenario</span>
