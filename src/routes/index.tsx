@@ -74,8 +74,8 @@ function InboxPage() {
     : null;
 
   return (
-    <div className="mx-auto flex h-screen max-w-3xl flex-col">
-      <header className="px-6 pb-2 pt-8">
+    <div className="flex h-screen flex-col">
+      <header className="flex items-center justify-between border-b border-border px-6 pb-2 pt-5">
         <h1 className="text-xl font-semibold">Inbox</h1>
         <p className="mt-1 text-xs text-muted-foreground">
           Each item is one decision. Resolve and move on.
