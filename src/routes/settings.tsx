@@ -12,6 +12,7 @@ import {
   setScenario,
   setRole,
   addBonus,
+  setTrialEnd,
   canSeeBilling,
   TOP_UPS,
   BREAKDOWN_TEAM,
@@ -219,7 +220,7 @@ function WorkspaceSection() {
 }
 
 function BillingSection() {
-  const { plan, used, total, scenario, role } = useBilling();
+  const { plan, used, total, scenario, role, trialDaysLeft } = useBilling();
   if (!canSeeBilling(role)) return null;
   const pct = Math.min(100, (used / total) * 100);
   const tone =
@@ -228,6 +229,18 @@ function BillingSection() {
   const buyPack = (credits: number, price: string) => {
     addBonus(credits);
     toast.success(`Added ${credits.toLocaleString()} credits — ${price}`);
+  };
+
+  const toggleTrial = () => {
+    if (trialDaysLeft != null) {
+      setTrialEnd(null);
+      toast.info("Trial ended");
+    } else {
+      const end = new Date();
+      end.setDate(end.getDate() + 14);
+      setTrialEnd(end.toISOString());
+      toast.success("14-day trial started");
+    }
   };
 
   return (
@@ -290,6 +303,27 @@ function BillingSection() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Trial toggle */}
+      <div className="mb-3 flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
+        <div className="text-sm">
+          <span className="font-medium">Trial</span>
+          <span className="text-muted-foreground">
+            {trialDaysLeft != null ? ` · ${trialDaysLeft} days left` : " · Not active"}
+          </span>
+        </div>
+        <button
+          onClick={toggleTrial}
+          className={cn(
+            "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+            trialDaysLeft != null
+              ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+              : "bg-primary text-primary-foreground hover:opacity-90",
+          )}
+        >
+          {trialDaysLeft != null ? "End trial" : "Start 14-day trial"}
+        </button>
       </div>
 
       {/* Scenario toggle (dev-only feel) */}

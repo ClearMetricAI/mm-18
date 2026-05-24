@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -13,6 +13,9 @@ import {
   ChevronRight,
   Trash2,
   MoreHorizontal,
+  Sparkles,
+  Wand2,
+  ChevronDown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,9 +38,27 @@ import { definitions as seedDefs, type Definition } from "@/lib/mock-data";
 import { matchesView } from "@/lib/views";
 import { useViews } from "@/lib/views-store";
 import { ViewEditor } from "@/components/view-editor";
+import { toast } from "sonner";
 
 type SortKey = "name" | "recent" | "drift" | "used";
 type GroupKey = "none" | "domain" | "owner" | "status";
+
+/* Mock AI generation — deterministic suggestions based on context */
+function mockAiGenerate(field: "description" | "formula", def: Definition): string {
+  if (field === "description") {
+    if (!def.description.trim()) {
+      return `Total ${def.name.toLowerCase()} across all recognized revenue streams, net of returns, discounts, and allowances, for the stated period.`;
+    }
+    return def.description + " Normalized for currency fluctuations and adjusted for non-recurring items.";
+  }
+  if (field === "formula") {
+    if (!def.formula.trim()) {
+      return `SUM(CASE WHEN recognized = true THEN amount ELSE 0 END) - returns - discounts`;
+    }
+    return def.formula + "\n-- validated against source-of-truth ledger monthly";
+  }
+  return "";
+}
 
 export const Route = createFileRoute("/define")({
   component: DefinePage,
@@ -267,13 +288,37 @@ function DefinePage() {
           <span className="ml-auto text-[11px] text-muted-foreground">
             {filtered.length}
           </span>
-          <button
-            onClick={addBlank}
-            className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-            title="New definition  (N)"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-1 rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="New definition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={addBlank} className="text-xs">
+                <Plus className="mr-2 h-3.5 w-3.5" />
+                Blank definition
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  addBlank();
+                  // After creating, trigger AI on description
+                  setTimeout(() => {
+                    const el = document.querySelector('[data-ai-field="description"]') as HTMLButtonElement | null;
+                    el?.click();
+                  }, 50);
+                }}
+                className="text-xs"
+              >
+                <Sparkles className="mr-2 h-3.5 w-3.5 text-primary" />
+                AI draft from name
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Search */}
@@ -514,6 +559,33 @@ function DetailPane({
   onToggleServe: () => void;
   onDelete: () => void;
 }) {
+  const [ai, setAi] = useState<
+    | { field: "description" | "formula"; value: string; loading: boolean }
+    | null
+  >(null);
+
+  const generate = useCallback(
+    (field: "description" | "formula") => {
+      setAi({ field, value: "", loading: true });
+      // Simulate network/AI delay
+      setTimeout(() => {
+        setAi({ field, value: mockAiGenerate(field, def), loading: false });
+      }, 700);
+    },
+    [def],
+  );
+
+  const accept = useCallback(() => {
+    if (!ai || ai.loading) return;
+    onChange({ [ai.field]: ai.value });
+    toast.success(`${ai.field === "description" ? "Description" : "Formula"} updated`);
+    setAi(null);
+  }, [ai, onChange]);
+
+  const reject = useCallback(() => {
+    setAi(null);
+  }, []);
+
   return (
     <div className="mx-auto max-w-2xl px-8 py-10">
       {/* Header */}
@@ -568,22 +640,60 @@ function DetailPane({
 
       {/* Fields */}
       <div className="space-y-5">
-        <Field label="Description">
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <FieldLabel>Description</FieldLabel>
+            <button
+              data-ai-field="description"
+              onClick={() => generate("description")}
+              disabled={!!ai && ai.loading}
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+            >
+              {ai?.field === "description" && ai.loading ? (
+                <Wand2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Sparkles className="h-3 w-3" />
+              )}
+              {ai?.field === "description" && ai.loading ? "Writing…" : "Write"}
+            </button>
+          </div>
           <Textarea
             value={def.description}
             onChange={(e) => onChange({ description: e.target.value })}
             rows={3}
             className="text-sm"
           />
-        </Field>
-        <Field label="Formula">
+          {ai?.field === "description" && !ai.loading && (
+            <AiDiff value={ai.value} onAccept={accept} onReject={reject} />
+          )}
+        </div>
+
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <FieldLabel>Formula</FieldLabel>
+            <button
+              onClick={() => generate("formula")}
+              disabled={!!ai && ai.loading}
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+            >
+              {ai?.field === "formula" && ai.loading ? (
+                <Wand2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Sparkles className="h-3 w-3" />
+              )}
+              {ai?.field === "formula" && ai.loading ? "Writing…" : "Write"}
+            </button>
+          </div>
           <Textarea
             value={def.formula}
             onChange={(e) => onChange({ formula: e.target.value })}
             rows={3}
             className="font-mono text-xs"
           />
-        </Field>
+          {ai?.field === "formula" && !ai.loading && (
+            <AiDiff value={ai.value} onAccept={accept} onReject={reject} />
+          )}
+        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <Meta label="Owner" value={def.owner} />
@@ -621,17 +731,39 @@ function DetailPane({
   );
 }
 
-function Field({
-  label,
-  children,
+function AiDiff({
+  value,
+  onAccept,
+  onReject,
 }: {
-  label: string;
-  children: React.ReactNode;
+  value: string;
+  onAccept: () => void;
+  onReject: () => void;
 }) {
   return (
-    <div>
-      <FieldLabel>{label}</FieldLabel>
-      {children}
+    <div className="mt-2 rounded-md border border-primary/20 bg-primary/5 px-3 py-2">
+      <div className="mb-1.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-primary">
+        <Sparkles className="h-3 w-3" />
+        Suggestion
+      </div>
+      <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+        {value}
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          onClick={onAccept}
+          className="flex items-center gap-1 rounded bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground transition-colors hover:opacity-90"
+        >
+          <Check className="h-3 w-3" />
+          Accept
+        </button>
+        <button
+          onClick={onReject}
+          className="rounded px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          Reject
+        </button>
+      </div>
     </div>
   );
 }

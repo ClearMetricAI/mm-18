@@ -12,6 +12,8 @@ import {
   Filter,
   MoreHorizontal,
   Inbox,
+  LogOut,
+  User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/lib/theme";
@@ -28,6 +30,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 const nav = [
@@ -37,13 +40,22 @@ const nav = [
   { to: "/serve", label: "Serve", icon: Radio },
 ] as const;
 
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 export function AppSidebar() {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const search = useRouterState({ select: (s) => s.location.search }) as {
     view?: string;
   };
   const navigate = useNavigate();
-  const { role } = useBilling();
+  const { role, trialDaysLeft, userName } = useBilling();
   const showBilling = canSeeBilling(role);
   const { theme, toggle } = useTheme();
   const { views, upsert, remove } = useViews();
@@ -72,6 +84,8 @@ export function AppSidebar() {
     setEditing(v);
     setEditorOpen(true);
   };
+
+  const onTrial = trialDaysLeft != null;
 
   return (
     <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
@@ -202,6 +216,53 @@ export function AppSidebar() {
           {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           {theme === "light" ? "Dark mode" : "Light mode"}
         </button>
+      </div>
+
+      {/* Profile */}
+      <div className="border-t border-sidebar-border p-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-sidebar-accent/60">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground text-[10px] font-semibold">
+                {initials(userName)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-xs font-medium leading-tight">{userName}</div>
+                <div className="truncate text-[10px] leading-tight text-sidebar-foreground/60 capitalize">{role}</div>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" align="end" className="w-48">
+            <div className="px-2 py-1.5">
+              <div className="text-sm font-medium">{userName}</div>
+              <div className="text-xs text-muted-foreground capitalize">{role}</div>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
+              <User className="mr-2 h-3.5 w-3.5" />
+              Account
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
+              <Settings className="mr-2 h-3.5 w-3.5" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive focus:text-destructive">
+              <LogOut className="mr-2 h-3.5 w-3.5" />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {onTrial && (
+          <Link
+            to="/pricing"
+            className="mx-2 mt-1.5 flex items-center justify-between rounded-md bg-primary/10 px-2.5 py-1.5 text-left transition-colors hover:bg-primary/15"
+          >
+            <span className="text-[10px] font-medium text-primary">Trial</span>
+            <span className="text-[10px] font-semibold text-primary">{trialDaysLeft} days left</span>
+          </Link>
+        )}
       </div>
 
       <ViewEditor
