@@ -9,7 +9,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Database, Settings, ArrowRight } from "lucide-react";
+import { Database, Settings, Inbox, FlaskConical, Radio, ArrowRight } from "lucide-react";
 import { definitions } from "@/lib/mock-data";
 
 export function CommandPalette() {
@@ -42,8 +42,17 @@ export function CommandPalette() {
         <CommandEmpty>No matches.</CommandEmpty>
 
         <CommandGroup heading="Pages">
+          <CommandItem onSelect={() => go(() => navigate({ to: "/" }))}>
+            <Inbox className="mr-2 h-4 w-4" /> Inbox
+          </CommandItem>
           <CommandItem onSelect={() => go(() => navigate({ to: "/define" }))}>
             <Database className="mr-2 h-4 w-4" /> Definitions
+          </CommandItem>
+          <CommandItem onSelect={() => go(() => navigate({ to: "/experiment" }))}>
+            <FlaskConical className="mr-2 h-4 w-4" /> Experiment
+          </CommandItem>
+          <CommandItem onSelect={() => go(() => navigate({ to: "/serve" }))}>
+            <Radio className="mr-2 h-4 w-4" /> Serve
           </CommandItem>
           <CommandItem onSelect={() => go(() => navigate({ to: "/settings" }))}>
             <Settings className="mr-2 h-4 w-4" /> Settings
@@ -57,7 +66,9 @@ export function CommandPalette() {
             <CommandItem
               key={`open-${d.id}`}
               value={`open ${d.name} ${d.owner}`}
-              onSelect={() => go(() => navigate({ to: "/define" }))}
+              onSelect={() =>
+                go(() => navigate({ to: "/define", search: { id: d.id } }))
+              }
             >
               <Database className="mr-2 h-4 w-4 text-muted-foreground" />
               <span className="flex-1 truncate">{d.name}</span>
