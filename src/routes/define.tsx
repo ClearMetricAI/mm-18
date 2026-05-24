@@ -288,13 +288,37 @@ function DefinePage() {
           <span className="ml-auto text-[11px] text-muted-foreground">
             {filtered.length}
           </span>
-          <button
-            onClick={addBlank}
-            className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-            title="New definition  (N)"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-1 rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                title="New definition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={addBlank} className="text-xs">
+                <Plus className="mr-2 h-3.5 w-3.5" />
+                Blank definition
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  addBlank();
+                  // After creating, trigger AI on description
+                  setTimeout(() => {
+                    const el = document.querySelector('[data-ai-field="description"]') as HTMLButtonElement | null;
+                    el?.click();
+                  }, 50);
+                }}
+                className="text-xs"
+              >
+                <Sparkles className="mr-2 h-3.5 w-3.5 text-primary" />
+                AI draft from name
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Search */}
