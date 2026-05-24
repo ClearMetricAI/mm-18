@@ -644,6 +644,7 @@ function DetailPane({
           <div className="mb-1.5 flex items-center justify-between">
             <FieldLabel>Description</FieldLabel>
             <button
+              data-ai-field="description"
               onClick={() => generate("description")}
               disabled={!!ai && ai.loading}
               className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
