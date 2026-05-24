@@ -219,7 +219,7 @@ function WorkspaceSection() {
 }
 
 function BillingSection() {
-  const { plan, used, total, scenario, role } = useBilling();
+  const { plan, used, total, scenario, role, trialDaysLeft } = useBilling();
   if (!canSeeBilling(role)) return null;
   const pct = Math.min(100, (used / total) * 100);
   const tone =
@@ -228,6 +228,18 @@ function BillingSection() {
   const buyPack = (credits: number, price: string) => {
     addBonus(credits);
     toast.success(`Added ${credits.toLocaleString()} credits — ${price}`);
+  };
+
+  const toggleTrial = () => {
+    if (trialDaysLeft != null) {
+      setTrialEnd(null);
+      toast.info("Trial ended");
+    } else {
+      const end = new Date();
+      end.setDate(end.getDate() + 14);
+      setTrialEnd(end.toISOString());
+      toast.success("14-day trial started");
+    }
   };
 
   return (
