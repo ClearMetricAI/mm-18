@@ -47,6 +47,8 @@ const KEY_SCENARIO = "clearmetric:billing-scenario";
 const KEY_PLAN = "clearmetric:billing-plan";
 const KEY_BONUS = "clearmetric:billing-bonus";
 const KEY_ROLE = "clearmetric:role";
+const KEY_TRIAL_END = "clearmetric:trial-end";
+const KEY_USER_NAME = "clearmetric:user-name";
 const EVENT = "clearmetric:billing-changed";
 
 const memory = new Map<string, unknown>();
@@ -88,19 +90,30 @@ function subscribe(cb: () => void) {
 let snapshotCache = "";
 let snapshotValue: ReturnType<typeof compute> | null = null;
 
+function getTrialDaysLeft(trialEndIso: string | null): number | null {
+  if (!trialEndIso) return null;
+  const end = new Date(trialEndIso);
+  const now = new Date();
+  const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : null;
+}
+
 function compute() {
   const scenario = read<Scenario>(KEY_SCENARIO, "healthy");
   const planId = read<Plan["id"]>(KEY_PLAN, "team");
   const bonus = read<number>(KEY_BONUS, 0);
   const role = read<Role>(KEY_ROLE, "owner");
   const plan = PLANS.find((p) => p.id === planId) ?? PLANS[2];
+  const trialEnd = read<string | null>(KEY_TRIAL_END, null);
+  const userName = read<string>(KEY_USER_NAME, "Alex Morgan");
 
   const pct = scenario === "healthy" ? 0.62 : scenario === "warning" ? 0.85 : 1;
   const baseUsed = Math.round(plan.monthlyCredits * pct);
   const totalCredits = plan.monthlyCredits + bonus;
   const used = Math.min(baseUsed, totalCredits);
+  const trialDaysLeft = getTrialDaysLeft(trialEnd);
 
-  return { scenario, plan, used, total: totalCredits, bonus, role };
+  return { scenario, plan, used, total: totalCredits, bonus, role, trialDaysLeft, userName };
 }
 
 export function useBilling() {
@@ -134,6 +147,14 @@ export function setRole(r: Role) {
 export function addBonus(credits: number) {
   const current = read<number>(KEY_BONUS, 0);
   write(KEY_BONUS, current + credits);
+}
+
+export function setTrialEnd(iso: string | null) {
+  write(KEY_TRIAL_END, iso);
+}
+
+export function setUserName(name: string) {
+  write(KEY_USER_NAME, name);
 }
 
 export function formatK(n: number): string {
