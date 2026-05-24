@@ -76,11 +76,13 @@ function InboxPage() {
   return (
     <div className="flex h-screen flex-col">
       <header className="flex items-center justify-between border-b border-border px-6 pb-2 pt-5">
-        <h1 className="text-xl font-semibold">Inbox</h1>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Each item is one decision. Resolve and move on.
-        </p>
-        <div className="mt-4 flex items-center gap-1 border-b border-border">
+        <div>
+          <h1 className="text-sm font-semibold">Inbox</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Each item is one decision. Resolve and move on.
+          </p>
+        </div>
+        <div className="flex items-center gap-1 border-b border-border">
           <TabBtn active={tab === "open"} onClick={() => setTab("open")}>
             Open
             {open.length > 0 && (
