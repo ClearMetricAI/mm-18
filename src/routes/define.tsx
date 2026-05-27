@@ -197,6 +197,9 @@ function DefinePage() {
       status: "draft",
       serveToAi: false,
       origin: "manual",
+    };
+    setDefs((prev) => [d, ...prev]);
+    select(id);
   };
 
   const startBulkGenerate = (drafts: Definition[], totalSeconds: number) => {
@@ -234,9 +237,6 @@ function DefinePage() {
       setTimeout(tick, intervalMs);
     };
     setTimeout(tick, intervalMs);
-  };
-    setDefs((prev) => [d, ...prev]);
-    select(id);
   };
 
   const removeDef = (id: string) => {
