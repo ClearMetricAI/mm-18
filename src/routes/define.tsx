@@ -357,6 +357,14 @@ function DefinePage() {
                 <Sparkles className="mr-2 h-3.5 w-3.5 text-primary" />
                 AI draft from name
               </DropdownMenuItem>
+              <div className="my-1 h-px bg-border" />
+              <DropdownMenuItem onClick={() => setBulkOpen(true)} className="text-xs">
+                <Database className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                <div className="flex flex-col">
+                  <span>Generate from sources…</span>
+                  <span className="text-[10px] text-muted-foreground">Bulk-draft from connected backends</span>
+                </div>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
