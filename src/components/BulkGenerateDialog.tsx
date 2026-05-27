@@ -45,8 +45,9 @@ const MOCK_DESCRIPTIONS: Record<string, string> = {
     "Account with 3 or more product events from 2 or more distinct users in the trailing 14 days. Excludes internal users.",
 };
 
-const CREDITS_PER_DRAFT = 250;
+const CREDITS_PER_DRAFT = 10; // ~1 AI call per draft
 const SECONDS_PER_DRAFT = 0.4;
+const DEFAULT_MAX_CREDITS = 500;
 
 export function BulkGenerateDialog({
   open,
@@ -60,19 +61,31 @@ export function BulkGenerateDialog({
   const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set([SOURCES[0].id]));
   const [selectedDomains, setSelectedDomains] = useState<Set<string>>(new Set(DOMAINS));
   const [skipExisting, setSkipExisting] = useState(true);
+  const [maxCredits, setMaxCredits] = useState(DEFAULT_MAX_CREDITS);
 
   const estimate = useMemo(() => {
     const totalCandidates = SOURCES.filter((s) => selectedSources.has(s.id))
       .reduce((sum, s) => sum + s.candidates, 0);
     const domainFactor = selectedDomains.size / DOMAINS.length;
     const skipFactor = skipExisting ? 0.78 : 1;
-    const count = Math.max(0, Math.round(totalCandidates * domainFactor * skipFactor));
+    const expected = Math.max(0, Math.round(totalCandidates * domainFactor * skipFactor));
+    // Honest range: ±25% — engine can't know exact count until it scans
+    const low = Math.max(0, Math.floor(expected * 0.75));
+    const high = Math.ceil(expected * 1.25);
+    // Hard ceiling from user's credit budget
+    const maxByCredits = Math.floor(maxCredits / CREDITS_PER_DRAFT);
+    const cappedHigh = Math.min(high, maxByCredits);
+    const cappedExpected = Math.min(expected, maxByCredits);
+    const willCap = high > maxByCredits && maxByCredits > 0;
     return {
-      count,
-      credits: count * CREDITS_PER_DRAFT,
-      seconds: Math.round(count * SECONDS_PER_DRAFT),
+      low: Math.min(low, maxByCredits),
+      high: cappedHigh,
+      expected: cappedExpected,
+      credits: cappedExpected * CREDITS_PER_DRAFT,
+      seconds: Math.round(cappedExpected * SECONDS_PER_DRAFT),
+      willCap,
     };
-  }, [selectedSources, selectedDomains, skipExisting]);
+  }, [selectedSources, selectedDomains, skipExisting, maxCredits]);
 
   const toggle = (set: Set<string>, setSet: (s: Set<string>) => void, v: string) => {
     const next = new Set(set);
@@ -82,7 +95,7 @@ export function BulkGenerateDialog({
   };
 
   const handleStart = () => {
-    const drafts: Definition[] = Array.from({ length: estimate.count }).map((_, i) => {
+    const drafts: Definition[] = Array.from({ length: estimate.expected }).map((_, i) => {
       const name = MOCK_NAMES[i % MOCK_NAMES.length] + (i >= MOCK_NAMES.length ? ` ${Math.floor(i / MOCK_NAMES.length) + 1}` : "");
       const domains = Array.from(selectedDomains);
       const domain = domains[i % domains.length] ?? "Finance";
@@ -197,11 +210,37 @@ export function BulkGenerateDialog({
               Skip metrics already in the library
             </label>
           </section>
+
+          {/* Budget */}
+          <section>
+            <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Budget
+            </div>
+            <label className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-xs">
+              <span className="text-muted-foreground">Stop after</span>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min={CREDITS_PER_DRAFT}
+                  step={CREDITS_PER_DRAFT}
+                  value={maxCredits}
+                  onChange={(e) => setMaxCredits(Math.max(CREDITS_PER_DRAFT, Number(e.target.value) || 0))}
+                  className="w-20 rounded border border-border bg-background px-2 py-1 text-right text-xs tabular-nums focus:border-primary focus:outline-none"
+                />
+                <span className="text-muted-foreground">credits</span>
+              </div>
+            </label>
+            {estimate.willCap && (
+              <div className="mt-1.5 text-[11px] text-muted-foreground">
+                Budget will cap generation. Raise it to draft more.
+              </div>
+            )}
+          </section>
         </div>
 
         <DialogFooter className="flex !justify-between gap-3 border-t border-border pt-3 sm:items-center">
           <div className="text-[11px] tabular-nums text-muted-foreground">
-            ~{estimate.count} drafts · ~{estimate.credits.toLocaleString()} credits · ~{estimate.seconds}s
+            ~{estimate.low}–{estimate.high} drafts · up to {estimate.credits.toLocaleString()} credits
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
@@ -210,10 +249,10 @@ export function BulkGenerateDialog({
             <Button
               size="sm"
               onClick={handleStart}
-              disabled={estimate.count === 0 || selectedSources.size === 0}
+              disabled={estimate.expected === 0 || selectedSources.size === 0}
             >
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              Generate {estimate.count} drafts
+              Generate drafts
             </Button>
           </div>
         </DialogFooter>
