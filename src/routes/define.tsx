@@ -79,6 +79,7 @@ function DefinePage() {
   const [defs, setDefs] = useState<Definition[]>(seedDefs);
   const [query, setQuery] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [groupKey, setGroupKey] = useState<GroupKey>("none");
