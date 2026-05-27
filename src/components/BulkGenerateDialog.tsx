@@ -95,7 +95,7 @@ export function BulkGenerateDialog({
   };
 
   const handleStart = () => {
-    const drafts: Definition[] = Array.from({ length: estimate.count }).map((_, i) => {
+    const drafts: Definition[] = Array.from({ length: estimate.expected }).map((_, i) => {
       const name = MOCK_NAMES[i % MOCK_NAMES.length] + (i >= MOCK_NAMES.length ? ` ${Math.floor(i / MOCK_NAMES.length) + 1}` : "");
       const domains = Array.from(selectedDomains);
       const domain = domains[i % domains.length] ?? "Finance";
