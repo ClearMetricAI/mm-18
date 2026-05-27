@@ -38,7 +38,9 @@ import { definitions as seedDefs, type Definition } from "@/lib/mock-data";
 import { matchesView } from "@/lib/views";
 import { useViews } from "@/lib/views-store";
 import { ViewEditor } from "@/components/view-editor";
+import { BulkGenerateDialog } from "@/components/BulkGenerateDialog";
 import { toast } from "sonner";
+import { Database } from "lucide-react";
 
 type SortKey = "name" | "recent" | "drift" | "used";
 type GroupKey = "none" | "domain" | "owner" | "status";
