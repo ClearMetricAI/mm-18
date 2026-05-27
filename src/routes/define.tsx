@@ -592,6 +592,12 @@ function DefinePage() {
           navigate({ to: "/define", search: { view: v.id, id: selectedId } });
         }}
       />
+
+      <BulkGenerateDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        onStart={startBulkGenerate}
+      />
     </div>
   );
 }
