@@ -61,19 +61,31 @@ export function BulkGenerateDialog({
   const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set([SOURCES[0].id]));
   const [selectedDomains, setSelectedDomains] = useState<Set<string>>(new Set(DOMAINS));
   const [skipExisting, setSkipExisting] = useState(true);
+  const [maxCredits, setMaxCredits] = useState(DEFAULT_MAX_CREDITS);
 
   const estimate = useMemo(() => {
     const totalCandidates = SOURCES.filter((s) => selectedSources.has(s.id))
       .reduce((sum, s) => sum + s.candidates, 0);
     const domainFactor = selectedDomains.size / DOMAINS.length;
     const skipFactor = skipExisting ? 0.78 : 1;
-    const count = Math.max(0, Math.round(totalCandidates * domainFactor * skipFactor));
+    const expected = Math.max(0, Math.round(totalCandidates * domainFactor * skipFactor));
+    // Honest range: ±25% — engine can't know exact count until it scans
+    const low = Math.max(0, Math.floor(expected * 0.75));
+    const high = Math.ceil(expected * 1.25);
+    // Hard ceiling from user's credit budget
+    const maxByCredits = Math.floor(maxCredits / CREDITS_PER_DRAFT);
+    const cappedHigh = Math.min(high, maxByCredits);
+    const cappedExpected = Math.min(expected, maxByCredits);
+    const willCap = high > maxByCredits && maxByCredits > 0;
     return {
-      count,
-      credits: count * CREDITS_PER_DRAFT,
-      seconds: Math.round(count * SECONDS_PER_DRAFT),
+      low: Math.min(low, maxByCredits),
+      high: cappedHigh,
+      expected: cappedExpected,
+      credits: cappedExpected * CREDITS_PER_DRAFT,
+      seconds: Math.round(cappedExpected * SECONDS_PER_DRAFT),
+      willCap,
     };
-  }, [selectedSources, selectedDomains, skipExisting]);
+  }, [selectedSources, selectedDomains, skipExisting, maxCredits]);
 
   const toggle = (set: Set<string>, setSet: (s: Set<string>) => void, v: string) => {
     const next = new Set(set);
