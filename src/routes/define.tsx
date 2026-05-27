@@ -197,7 +197,44 @@ function DefinePage() {
       status: "draft",
       serveToAi: false,
       origin: "manual",
+  };
+
+  const startBulkGenerate = (drafts: Definition[], totalSeconds: number) => {
+    if (drafts.length === 0) return;
+    const total = drafts.length;
+    const tid = toast.loading(`Generating 0 of ${total} definitions…`, {
+      duration: Infinity,
+      description: "You can keep working — drafts will appear in your library.",
+    });
+    const intervalMs = Math.max(120, Math.round((totalSeconds * 1000) / total));
+    let i = 0;
+    const tick = () => {
+      if (i >= total) {
+        toast.success(`${total} drafts ready in your library`, {
+          id: tid,
+          duration: 6000,
+          description: "Review and approve before serving to AI.",
+          action: {
+            label: "Show drafts",
+            onClick: () => {
+              setQuery("");
+              setSortKey("recent");
+            },
+          },
+        });
+        return;
+      }
+      const next = drafts[i];
+      setDefs((prev) => [next, ...prev]);
+      i += 1;
+      toast.loading(`Generating ${i} of ${total} definitions…`, {
+        id: tid,
+        description: `Latest: ${next.name}`,
+      });
+      setTimeout(tick, intervalMs);
     };
+    setTimeout(tick, intervalMs);
+  };
     setDefs((prev) => [d, ...prev]);
     select(id);
   };
