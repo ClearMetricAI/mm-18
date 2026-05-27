@@ -38,7 +38,9 @@ import { definitions as seedDefs, type Definition } from "@/lib/mock-data";
 import { matchesView } from "@/lib/views";
 import { useViews } from "@/lib/views-store";
 import { ViewEditor } from "@/components/view-editor";
+import { BulkGenerateDialog } from "@/components/BulkGenerateDialog";
 import { toast } from "sonner";
+import { Database } from "lucide-react";
 
 type SortKey = "name" | "recent" | "drift" | "used";
 type GroupKey = "none" | "domain" | "owner" | "status";
@@ -77,6 +79,7 @@ function DefinePage() {
   const [defs, setDefs] = useState<Definition[]>(seedDefs);
   const [query, setQuery] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [groupKey, setGroupKey] = useState<GroupKey>("none");
@@ -199,6 +202,43 @@ function DefinePage() {
     select(id);
   };
 
+  const startBulkGenerate = (drafts: Definition[], totalSeconds: number) => {
+    if (drafts.length === 0) return;
+    const total = drafts.length;
+    const tid = toast.loading(`Generating 0 of ${total} definitions…`, {
+      duration: Infinity,
+      description: "You can keep working — drafts will appear in your library.",
+    });
+    const intervalMs = Math.max(120, Math.round((totalSeconds * 1000) / total));
+    let i = 0;
+    const tick = () => {
+      if (i >= total) {
+        toast.success(`${total} drafts ready in your library`, {
+          id: tid,
+          duration: 6000,
+          description: "Review and approve before serving to AI.",
+          action: {
+            label: "Show drafts",
+            onClick: () => {
+              setQuery("");
+              setSortKey("recent");
+            },
+          },
+        });
+        return;
+      }
+      const next = drafts[i];
+      setDefs((prev) => [next, ...prev]);
+      i += 1;
+      toast.loading(`Generating ${i} of ${total} definitions…`, {
+        id: tid,
+        description: `Latest: ${next.name}`,
+      });
+      setTimeout(tick, intervalMs);
+    };
+    setTimeout(tick, intervalMs);
+  };
+
   const removeDef = (id: string) => {
     setDefs((prev) => prev.filter((d) => d.id !== id));
     navigate({ to: "/define", search: (prev: Record<string, unknown>) => ({ ...prev, id: undefined }) });
@@ -316,6 +356,14 @@ function DefinePage() {
               >
                 <Sparkles className="mr-2 h-3.5 w-3.5 text-primary" />
                 AI draft from name
+              </DropdownMenuItem>
+              <div className="my-1 h-px bg-border" />
+              <DropdownMenuItem onClick={() => setBulkOpen(true)} className="text-xs">
+                <Database className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                <div className="flex flex-col">
+                  <span>Generate from sources…</span>
+                  <span className="text-[10px] text-muted-foreground">Bulk-draft from connected backends</span>
+                </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -543,6 +591,12 @@ function DefinePage() {
           upsertView(v);
           navigate({ to: "/define", search: { view: v.id, id: selectedId } });
         }}
+      />
+
+      <BulkGenerateDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        onStart={startBulkGenerate}
       />
     </div>
   );
