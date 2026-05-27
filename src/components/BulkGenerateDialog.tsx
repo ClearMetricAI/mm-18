@@ -45,8 +45,9 @@ const MOCK_DESCRIPTIONS: Record<string, string> = {
     "Account with 3 or more product events from 2 or more distinct users in the trailing 14 days. Excludes internal users.",
 };
 
-const CREDITS_PER_DRAFT = 250;
+const CREDITS_PER_DRAFT = 10; // ~1 AI call per draft
 const SECONDS_PER_DRAFT = 0.4;
+const DEFAULT_MAX_CREDITS = 500;
 
 export function BulkGenerateDialog({
   open,
