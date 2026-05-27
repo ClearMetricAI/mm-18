@@ -210,11 +210,37 @@ export function BulkGenerateDialog({
               Skip metrics already in the library
             </label>
           </section>
+
+          {/* Budget */}
+          <section>
+            <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Budget
+            </div>
+            <label className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-xs">
+              <span className="text-muted-foreground">Stop after</span>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min={CREDITS_PER_DRAFT}
+                  step={CREDITS_PER_DRAFT}
+                  value={maxCredits}
+                  onChange={(e) => setMaxCredits(Math.max(CREDITS_PER_DRAFT, Number(e.target.value) || 0))}
+                  className="w-20 rounded border border-border bg-background px-2 py-1 text-right text-xs tabular-nums focus:border-primary focus:outline-none"
+                />
+                <span className="text-muted-foreground">credits</span>
+              </div>
+            </label>
+            {estimate.willCap && (
+              <div className="mt-1.5 text-[11px] text-muted-foreground">
+                Budget will cap generation. Raise it to draft more.
+              </div>
+            )}
+          </section>
         </div>
 
         <DialogFooter className="flex !justify-between gap-3 border-t border-border pt-3 sm:items-center">
           <div className="text-[11px] tabular-nums text-muted-foreground">
-            ~{estimate.count} drafts · ~{estimate.credits.toLocaleString()} credits · ~{estimate.seconds}s
+            ~{estimate.low}–{estimate.high} drafts · up to {estimate.credits.toLocaleString()} credits
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
@@ -223,10 +249,10 @@ export function BulkGenerateDialog({
             <Button
               size="sm"
               onClick={handleStart}
-              disabled={estimate.count === 0 || selectedSources.size === 0}
+              disabled={estimate.expected === 0 || selectedSources.size === 0}
             >
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              Generate {estimate.count} drafts
+              Generate drafts
             </Button>
           </div>
         </DialogFooter>
