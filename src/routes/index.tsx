@@ -7,7 +7,10 @@ import {
   MessageSquare,
   Search,
   Inbox as InboxIcon,
+  ShieldAlert,
+  HelpCircle,
 } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,7 +51,18 @@ const KIND_META: Record<
     tone: "text-muted-foreground",
     label: "Review",
   },
+  deviation: {
+    icon: ShieldAlert,
+    tone: "text-destructive",
+    label: "Deviation",
+  },
+  "no-standard": {
+    icon: HelpCircle,
+    tone: "text-warning",
+    label: "No standard",
+  },
 };
+
 
 function ageLabel(h: number) {
   if (h < 1) return "just now";
