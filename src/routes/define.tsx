@@ -845,6 +845,53 @@ function Meta({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ChecksUsing({ definitionId }: { definitionId: string }) {
+  const navigate = useNavigate();
+  const using = SEED_CHECKS.filter((c) => c.definitionId === definitionId);
+  if (using.length === 0) return null;
+  const deviating = using.filter((c) => c.status === "deviating");
+  return (
+    <div>
+      <FieldLabel>Checks using this</FieldLabel>
+      <div className="space-y-1">
+        {using.map((c) => (
+          <button
+            key={c.id}
+            onClick={() =>
+              navigate({ to: "/enforce/checks", search: { id: c.id } })
+            }
+            className="flex w-full items-center gap-2 rounded-md border border-border px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-accent/50"
+          >
+            <ShieldCheck
+              className={cn(
+                "h-3.5 w-3.5 shrink-0",
+                c.status === "deviating"
+                  ? "text-destructive"
+                  : "text-muted-foreground",
+              )}
+            />
+            <span className="min-w-0 flex-1 truncate">{c.questionText}</span>
+            <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+              {c.frequencyScore}/wk
+            </span>
+            {c.status === "deviating" && (
+              <span className="shrink-0 rounded-full bg-destructive/15 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-destructive">
+                Deviating
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+      {deviating.length > 0 && (
+        <p className="mt-1.5 text-[10px] text-muted-foreground">
+          {deviating.length} of {using.length} are deviating in connected tools.
+        </p>
+      )}
+    </div>
+  );
+}
+
+
 function FilterToggle({
   label,
   checked,
