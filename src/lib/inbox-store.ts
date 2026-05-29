@@ -8,6 +8,9 @@ import {
   type ImprovementSuggestion,
 } from "./engine";
 import { definitions } from "./mock-data";
+import { SEED_CHECKS } from "./referee/mock-checks";
+import type { Check } from "./referee/types";
+
 
 // ── Item types ────────────────────────────────────────────────────────────
 
@@ -16,7 +19,9 @@ export type InboxKind =
   | "draft"
   | "improvement"
   | "sync-failure"
-  | "review-request";
+  | "review-request"
+  | "deviation"
+  | "no-standard";
 
 export interface BaseInboxItem {
   id: string;
@@ -57,12 +62,30 @@ export interface ReviewRequestInboxItem extends BaseInboxItem {
   note: string;
 }
 
+export interface DeviationInboxItem extends BaseInboxItem {
+  kind: "deviation";
+  checkId: string;
+  question: string;
+  causeNote: string;
+  deviatingTools: string[];
+}
+
+export interface NoStandardInboxItem extends BaseInboxItem {
+  kind: "no-standard";
+  checkId: string;
+  question: string;
+  frequencyScore: number;
+}
+
 export type InboxItem =
   | DriftInboxItem
   | DraftInboxItem
   | ImprovementInboxItem
   | SyncFailureInboxItem
-  | ReviewRequestInboxItem;
+  | ReviewRequestInboxItem
+  | DeviationInboxItem
+  | NoStandardInboxItem;
+
 
 // ── Resolved IDs (localStorage) ───────────────────────────────────────────
 
