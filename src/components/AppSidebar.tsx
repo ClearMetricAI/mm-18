@@ -1,8 +1,7 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   BookOpen,
-  FlaskConical,
-  Radio,
+  ShieldCheck,
   Moon,
   Sun,
   Sparkles,
@@ -14,6 +13,7 @@ import {
   Inbox,
   LogOut,
   User,
+  Layers,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/lib/theme";
@@ -24,6 +24,7 @@ import { CreditMeter } from "@/components/CreditMeter";
 import { definitions } from "@/lib/mock-data";
 import { useBilling, canSeeBilling } from "@/lib/billing-mock";
 import { useInbox } from "@/lib/inbox-store";
+import { useChecks } from "@/lib/referee/checks-store";
 import type { View } from "@/lib/views";
 import {
   DropdownMenu,
@@ -33,11 +34,9 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-const nav = [
+const topNav = [
   { to: "/", label: "Inbox", icon: Inbox },
   { to: "/define", label: "Define", icon: BookOpen },
-  { to: "/experiment", label: "Experiment", icon: FlaskConical },
-  { to: "/serve", label: "Serve", icon: Radio },
 ] as const;
 
 function initials(name: string): string {
