@@ -474,7 +474,12 @@ function InboxDetailSheet({
                     >
                       Open in Define
                     </Button>
+                  </div>
+                </>
+              )}
+
               {item.kind === "deviation" && (
+
                 <>
                   <p className="text-sm text-foreground/85">{item.causeNote}</p>
                   <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-[11px]">
@@ -544,15 +549,13 @@ function InboxDetailSheet({
               )}
             </div>
 
-                </>
-              )}
-            </div>
           </>
         )}
       </SheetContent>
     </Sheet>
   );
 }
+
 
 function Field({
   label,
