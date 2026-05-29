@@ -15,6 +15,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ExperimentRouteImport } from './routes/experiment'
 import { Route as DefineRouteImport } from './routes/define'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EnforceChecksRouteImport } from './routes/enforce.checks'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -46,6 +47,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EnforceChecksRoute = EnforceChecksRouteImport.update({
+  id: '/enforce/checks',
+  path: '/enforce/checks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/serve': typeof ServeRoute
   '/settings': typeof SettingsRoute
+  '/enforce/checks': typeof EnforceChecksRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/serve': typeof ServeRoute
   '/settings': typeof SettingsRoute
+  '/enforce/checks': typeof EnforceChecksRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/serve': typeof ServeRoute
   '/settings': typeof SettingsRoute
+  '/enforce/checks': typeof EnforceChecksRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,8 +90,16 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/serve'
     | '/settings'
+    | '/enforce/checks'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/define' | '/experiment' | '/pricing' | '/serve' | '/settings'
+  to:
+    | '/'
+    | '/define'
+    | '/experiment'
+    | '/pricing'
+    | '/serve'
+    | '/settings'
+    | '/enforce/checks'
   id:
     | '__root__'
     | '/'
@@ -91,6 +108,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/serve'
     | '/settings'
+    | '/enforce/checks'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -100,6 +118,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ServeRoute: typeof ServeRoute
   SettingsRoute: typeof SettingsRoute
+  EnforceChecksRoute: typeof EnforceChecksRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -146,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/enforce/checks': {
+      id: '/enforce/checks'
+      path: '/enforce/checks'
+      fullPath: '/enforce/checks'
+      preLoaderRoute: typeof EnforceChecksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -156,7 +182,18 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ServeRoute: ServeRoute,
   SettingsRoute: SettingsRoute,
+  EnforceChecksRoute: EnforceChecksRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
