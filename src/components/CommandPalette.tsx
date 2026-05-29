@@ -9,8 +9,10 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Database, Settings, Inbox, ShieldCheck, ArrowRight } from "lucide-react";
+import { Database, Settings, Inbox, ShieldCheck, ArrowRight, Zap, HelpCircle } from "lucide-react";
 import { definitions } from "@/lib/mock-data";
+import { SEED_CHECKS } from "@/lib/referee/mock-checks";
+
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -57,6 +59,38 @@ export function CommandPalette() {
         </CommandGroup>
 
         <CommandSeparator />
+
+        <CommandGroup heading="Checks">
+          <CommandItem
+            onSelect={() =>
+              go(() => navigate({ to: "/enforce/checks", search: {} }))
+            }
+          >
+            <Zap className="mr-2 h-4 w-4 text-destructive" /> Jump to deviating checks
+          </CommandItem>
+          {SEED_CHECKS.slice(0, 12).map((c) => (
+            <CommandItem
+              key={`chk-${c.id}`}
+              value={`check ${c.questionText}`}
+              onSelect={() =>
+                go(() => navigate({ to: "/enforce/checks", search: { id: c.id } }))
+              }
+            >
+              {c.status === "no_standard" ? (
+                <HelpCircle className="mr-2 h-4 w-4 text-warning" />
+              ) : (
+                <ShieldCheck className="mr-2 h-4 w-4 text-muted-foreground" />
+              )}
+              <span className="flex-1 truncate">{c.questionText}</span>
+              <span className="ml-2 font-mono text-[10px] text-muted-foreground">
+                {c.frequencyScore}/wk
+              </span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+
+        <CommandSeparator />
+
 
         <CommandGroup heading="Open definition">
           {definitions.slice(0, 40).map((d) => (

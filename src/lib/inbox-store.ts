@@ -8,6 +8,9 @@ import {
   type ImprovementSuggestion,
 } from "./engine";
 import { definitions } from "./mock-data";
+import { SEED_CHECKS } from "./referee/mock-checks";
+import type { Check } from "./referee/types";
+
 
 // ── Item types ────────────────────────────────────────────────────────────
 
@@ -16,7 +19,9 @@ export type InboxKind =
   | "draft"
   | "improvement"
   | "sync-failure"
-  | "review-request";
+  | "review-request"
+  | "deviation"
+  | "no-standard";
 
 export interface BaseInboxItem {
   id: string;
@@ -57,12 +62,30 @@ export interface ReviewRequestInboxItem extends BaseInboxItem {
   note: string;
 }
 
+export interface DeviationInboxItem extends BaseInboxItem {
+  kind: "deviation";
+  checkId: string;
+  question: string;
+  causeNote: string;
+  deviatingTools: string[];
+}
+
+export interface NoStandardInboxItem extends BaseInboxItem {
+  kind: "no-standard";
+  checkId: string;
+  question: string;
+  frequencyScore: number;
+}
+
 export type InboxItem =
   | DriftInboxItem
   | DraftInboxItem
   | ImprovementInboxItem
   | SyncFailureInboxItem
-  | ReviewRequestInboxItem;
+  | ReviewRequestInboxItem
+  | DeviationInboxItem
+  | NoStandardInboxItem;
+
 
 // ── Resolved IDs (localStorage) ───────────────────────────────────────────
 
@@ -167,8 +190,46 @@ function buildAll(): InboxItem[] {
     note: "Want to publish this so the Q4 board deck can cite it. Looks right to me — second pair of eyes?",
   });
 
+  // Deviations + no-standard from referee checks store (derived, not duplicated).
+  // Truncate to the most-asked few so Checks page remains the deep view.
+  const deviating = SEED_CHECKS.filter((c: Check) => c.status === "deviating")
+    .sort((a: Check, b: Check) => b.frequencyScore - a.frequencyScore);
+  for (const c of deviating) {
+    const deviatingTools = c.toolResults
+      .filter((r) => r.verdict === "deviates")
+      .map((r) => r.tool);
+    items.push({
+      id: `dev_${c.id}`,
+      kind: "deviation",
+      title: c.questionText,
+      source: deviatingTools.length === 1 ? deviatingTools[0] : `${deviatingTools.length} tools`,
+      ageHours: 6,
+      checkId: c.id,
+      question: c.questionText,
+      causeNote: c.causeNote ?? "Tools disagree on this metric.",
+      deviatingTools,
+    });
+  }
+
+  const noStandard = SEED_CHECKS.filter((c: Check) => c.status === "no_standard")
+    .sort((a: Check, b: Check) => b.frequencyScore - a.frequencyScore)
+    .slice(0, 2); // only surface the most-asked; the rest live on Checks page
+  for (const c of noStandard) {
+    items.push({
+      id: `nostd_${c.id}`,
+      kind: "no-standard",
+      title: c.questionText,
+      source: "Engine",
+      ageHours: 12,
+      checkId: c.id,
+      question: c.questionText,
+      frequencyScore: c.frequencyScore,
+    });
+  }
+
   return items;
 }
+
 
 // Stable snapshot — built once per module load. Mock data is deterministic.
 const ALL_ITEMS = buildAll();

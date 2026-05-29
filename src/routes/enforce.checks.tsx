@@ -5,7 +5,9 @@ import { CheckQueue } from "@/components/checks/CheckQueue";
 import { CheckDetail } from "@/components/checks/CheckDetail";
 import { useChecks } from "@/lib/referee/checks-store";
 import { simulateMetadataChange } from "@/lib/referee/engine";
+import { addBonus } from "@/lib/billing-mock";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/enforce/checks")({
   component: ChecksPage,
@@ -58,11 +60,14 @@ function ChecksPage() {
                 description: "Cheap metadata diff caught it before any tool was asked.",
               });
             } else {
+              // Debit credits through the existing billing-mock so the CreditMeter reflects it.
+              addBonus(-run.costUnits);
               toast.success(`Re-evaluated ${affected.length} affected check(s)`, {
                 description: `${run.costUnits} credits used. ${checks.length - affected.length} dormant checks cost $0.`,
               });
             }
           }}
+
           className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           title="Simulate a metadata change in the source"
         >

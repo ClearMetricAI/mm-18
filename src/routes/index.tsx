@@ -7,7 +7,10 @@ import {
   MessageSquare,
   Search,
   Inbox as InboxIcon,
+  ShieldAlert,
+  HelpCircle,
 } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,7 +51,18 @@ const KIND_META: Record<
     tone: "text-muted-foreground",
     label: "Review",
   },
+  deviation: {
+    icon: ShieldAlert,
+    tone: "text-destructive",
+    label: "Deviation",
+  },
+  "no-standard": {
+    icon: HelpCircle,
+    tone: "text-warning",
+    label: "No standard",
+  },
 };
+
 
 function ageLabel(h: number) {
   if (h < 1) return "just now";
@@ -463,13 +477,85 @@ function InboxDetailSheet({
                   </div>
                 </>
               )}
+
+              {item.kind === "deviation" && (
+
+                <>
+                  <p className="text-sm text-foreground/85">{item.causeNote}</p>
+                  <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-[11px]">
+                    <div className="mb-1 font-medium uppercase tracking-wider text-destructive">
+                      Deviating
+                    </div>
+                    <div className="flex flex-wrap gap-1 capitalize">
+                      {item.deviatingTools.map((t) => (
+                        <span key={t} className="rounded bg-background px-1.5 py-0.5 font-mono text-[10px] text-destructive">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        navigate({ to: "/enforce/checks", search: { id: item.checkId } });
+                      }}
+                    >
+                      Open in Checks
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        onResolve(item.id);
+                        toast("Snoozed — deviation still tracked in Checks");
+                      }}
+                    >
+                      Snooze
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {item.kind === "no-standard" && (
+                <>
+                  <p className="text-sm text-foreground/85">
+                    No governed definition yet. Tools are answering this on their own.
+                  </p>
+                  <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-[11px] text-foreground/80">
+                    Asked <span className="font-mono">{item.frequencyScore}×/week</span> across connected tools.
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        navigate({ to: "/enforce/checks", search: { id: item.checkId } });
+                      }}
+                    >
+                      Set a standard
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        onResolve(item.id);
+                        toast("Dismissed");
+                      }}
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
+
           </>
         )}
       </SheetContent>
     </Sheet>
   );
 }
+
 
 function Field({
   label,
