@@ -40,7 +40,9 @@ import { useViews } from "@/lib/views-store";
 import { ViewEditor } from "@/components/view-editor";
 import { BulkGenerateDialog } from "@/components/BulkGenerateDialog";
 import { toast } from "sonner";
-import { Database } from "lucide-react";
+import { Database, ShieldCheck } from "lucide-react";
+import { SEED_CHECKS } from "@/lib/referee/mock-checks";
+
 
 type SortKey = "name" | "recent" | "drift" | "used";
 type GroupKey = "none" | "domain" | "owner" | "status";
@@ -759,6 +761,9 @@ function DetailPane({
           />
         </div>
 
+        {/* Checks using this definition — bridges to Enforce */}
+        <ChecksUsing definitionId={def.id} />
+
         {def.usedIn.length > 0 && (
           <div>
             <FieldLabel>Used in</FieldLabel>
@@ -774,6 +779,7 @@ function DetailPane({
             </div>
           </div>
         )}
+
 
         {def.confirmedAt && (
           <div className="text-[11px] text-muted-foreground">

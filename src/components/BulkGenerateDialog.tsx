@@ -126,13 +126,14 @@ export function BulkGenerateDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Sparkles className="h-4 w-4 text-primary" />
-            Generate definitions from sources
+            Draft from connected sources
           </DialogTitle>
           <DialogDescription className="text-xs">
-            The engine scans connected sources and drafts a definition for each metric it finds.
-            Drafts land in your library — nothing is served to AI until you approve.
+            Referee scans your warehouses, BI tools, and catalogs and drafts one definition
+            per metric it finds. Everything lands as a draft — nothing is governed until you approve.
           </DialogDescription>
         </DialogHeader>
+
 
         <div className="space-y-5 py-2">
           {/* Sources */}
