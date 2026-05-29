@@ -26,10 +26,10 @@ function NotFoundComponent() {
         </p>
         <div className="mt-6">
           <Link
-            to="/define"
+            to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
           >
-            Go to Define
+            Go to Inbox
           </Link>
         </div>
       </div>
@@ -66,11 +66,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ClearMetric — Metric definitions for humans and AI" },
+      { title: "Referee — The neutral verification layer for AI on your data" },
       {
         name: "description",
         content:
-          "ClearMetric is a dictionary for your business metrics that humans and AI can both read. Stop arguing about numbers. Stop letting AI guess.",
+          "Referee governs what your metrics mean (Define) and continuously verifies that AI tools like Cortex, Copilot, and Genie obey those definitions (Enforce).",
       },
     ],
     links: [

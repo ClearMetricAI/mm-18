@@ -108,7 +108,7 @@ function SettingsPage() {
         }
       >
         <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-          Upload a spreadsheet, data dictionary, or dbt YAML and ClearMetric extracts metric
+          Upload a spreadsheet, data dictionary, or dbt YAML and Referee extracts metric
           definitions as drafts on Define. Live connections sync on a schedule.
         </p>
         <div className="grid gap-2">

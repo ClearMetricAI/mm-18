@@ -1,8 +1,7 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   BookOpen,
-  FlaskConical,
-  Radio,
+  ShieldCheck,
   Moon,
   Sun,
   Sparkles,
@@ -14,6 +13,7 @@ import {
   Inbox,
   LogOut,
   User,
+  Layers,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/lib/theme";
@@ -24,6 +24,7 @@ import { CreditMeter } from "@/components/CreditMeter";
 import { definitions } from "@/lib/mock-data";
 import { useBilling, canSeeBilling } from "@/lib/billing-mock";
 import { useInbox } from "@/lib/inbox-store";
+import { useChecks } from "@/lib/referee/checks-store";
 import type { View } from "@/lib/views";
 import {
   DropdownMenu,
@@ -33,11 +34,9 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
-const nav = [
+const topNav = [
   { to: "/", label: "Inbox", icon: Inbox },
   { to: "/define", label: "Define", icon: BookOpen },
-  { to: "/experiment", label: "Experiment", icon: FlaskConical },
-  { to: "/serve", label: "Serve", icon: Radio },
 ] as const;
 
 function initials(name: string): string {
@@ -60,6 +59,7 @@ export function AppSidebar() {
   const { theme, toggle } = useTheme();
   const { views, upsert, remove } = useViews();
   const { openCount } = useInbox();
+  const { counts: checkCounts } = useChecks();
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<View | null>(null);
@@ -91,13 +91,13 @@ export function AppSidebar() {
     <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <div className="flex h-14 items-center gap-2 px-4">
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-          <Sparkles className="h-4 w-4" />
+          <ShieldCheck className="h-4 w-4" />
         </div>
-        <span className="text-sm font-semibold tracking-tight">ClearMetric</span>
+        <span className="text-sm font-semibold tracking-tight">Referee</span>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2 py-2">
-        {nav.map(({ to, label, icon: Icon }) => {
+        {topNav.map(({ to, label, icon: Icon }) => {
           const active = path === to;
           return (
             <Link key={to} to={to} className={linkCls(active)}>
@@ -111,6 +111,27 @@ export function AppSidebar() {
             </Link>
           );
         })}
+
+        {/* Enforce module group */}
+        <div className="mt-4 mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+          Enforce
+        </div>
+        <Link to="/enforce/checks" className={linkCls(path.startsWith("/enforce"))}>
+          <ShieldCheck className="h-4 w-4" />
+          <span className="flex-1">Checks</span>
+          {mounted && checkCounts.deviating > 0 && (
+            <span className="rounded-full bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
+              {checkCounts.deviating}
+            </span>
+          )}
+        </Link>
+        <div className={cn(linkCls(false), "cursor-not-allowed opacity-50")}>
+          <Layers className="h-4 w-4" />
+          <span className="flex-1">Suites</span>
+          <span className="text-[9px] font-medium uppercase tracking-wider text-sidebar-foreground/40">
+            Soon
+          </span>
+        </div>
 
         <div className="mt-4">
           <div className="flex items-center pr-1">

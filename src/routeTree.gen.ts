@@ -10,30 +10,19 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ServeRouteImport } from './routes/serve'
 import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as ExperimentRouteImport } from './routes/experiment'
 import { Route as DefineRouteImport } from './routes/define'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EnforceChecksRouteImport } from './routes/enforce.checks'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ServeRoute = ServeRouteImport.update({
-  id: '/serve',
-  path: '/serve',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExperimentRoute = ExperimentRouteImport.update({
-  id: '/experiment',
-  path: '/experiment',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DefineRoute = DefineRouteImport.update({
@@ -46,60 +35,54 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EnforceChecksRoute = EnforceChecksRouteImport.update({
+  id: '/enforce/checks',
+  path: '/enforce/checks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/define': typeof DefineRoute
-  '/experiment': typeof ExperimentRoute
   '/pricing': typeof PricingRoute
-  '/serve': typeof ServeRoute
   '/settings': typeof SettingsRoute
+  '/enforce/checks': typeof EnforceChecksRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/define': typeof DefineRoute
-  '/experiment': typeof ExperimentRoute
   '/pricing': typeof PricingRoute
-  '/serve': typeof ServeRoute
   '/settings': typeof SettingsRoute
+  '/enforce/checks': typeof EnforceChecksRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/define': typeof DefineRoute
-  '/experiment': typeof ExperimentRoute
   '/pricing': typeof PricingRoute
-  '/serve': typeof ServeRoute
   '/settings': typeof SettingsRoute
+  '/enforce/checks': typeof EnforceChecksRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/define'
-    | '/experiment'
-    | '/pricing'
-    | '/serve'
-    | '/settings'
+  fullPaths: '/' | '/define' | '/pricing' | '/settings' | '/enforce/checks'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/define' | '/experiment' | '/pricing' | '/serve' | '/settings'
+  to: '/' | '/define' | '/pricing' | '/settings' | '/enforce/checks'
   id:
     | '__root__'
     | '/'
     | '/define'
-    | '/experiment'
     | '/pricing'
-    | '/serve'
     | '/settings'
+    | '/enforce/checks'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DefineRoute: typeof DefineRoute
-  ExperimentRoute: typeof ExperimentRoute
   PricingRoute: typeof PricingRoute
-  ServeRoute: typeof ServeRoute
   SettingsRoute: typeof SettingsRoute
+  EnforceChecksRoute: typeof EnforceChecksRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -111,25 +94,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/serve': {
-      id: '/serve'
-      path: '/serve'
-      fullPath: '/serve'
-      preLoaderRoute: typeof ServeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/experiment': {
-      id: '/experiment'
-      path: '/experiment'
-      fullPath: '/experiment'
-      preLoaderRoute: typeof ExperimentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/define': {
@@ -146,16 +115,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/enforce/checks': {
+      id: '/enforce/checks'
+      path: '/enforce/checks'
+      fullPath: '/enforce/checks'
+      preLoaderRoute: typeof EnforceChecksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DefineRoute: DefineRoute,
-  ExperimentRoute: ExperimentRoute,
   PricingRoute: PricingRoute,
-  ServeRoute: ServeRoute,
   SettingsRoute: SettingsRoute,
+  EnforceChecksRoute: EnforceChecksRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

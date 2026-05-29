@@ -9,7 +9,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
-import { Database, Settings, Inbox, FlaskConical, Radio, ArrowRight } from "lucide-react";
+import { Database, Settings, Inbox, ShieldCheck, ArrowRight } from "lucide-react";
 import { definitions } from "@/lib/mock-data";
 
 export function CommandPalette() {
@@ -46,13 +46,10 @@ export function CommandPalette() {
             <Inbox className="mr-2 h-4 w-4" /> Inbox
           </CommandItem>
           <CommandItem onSelect={() => go(() => navigate({ to: "/define" }))}>
-            <Database className="mr-2 h-4 w-4" /> Definitions
+            <Database className="mr-2 h-4 w-4" /> Define
           </CommandItem>
-          <CommandItem onSelect={() => go(() => navigate({ to: "/experiment" }))}>
-            <FlaskConical className="mr-2 h-4 w-4" /> Experiment
-          </CommandItem>
-          <CommandItem onSelect={() => go(() => navigate({ to: "/serve" }))}>
-            <Radio className="mr-2 h-4 w-4" /> Serve
+          <CommandItem onSelect={() => go(() => navigate({ to: "/enforce/checks" }))}>
+            <ShieldCheck className="mr-2 h-4 w-4" /> Enforce · Checks
           </CommandItem>
           <CommandItem onSelect={() => go(() => navigate({ to: "/settings" }))}>
             <Settings className="mr-2 h-4 w-4" /> Settings
